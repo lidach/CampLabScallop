@@ -19,7 +19,8 @@ rm(list = ls())
 ################################################################################
 
 ### Constants, life history and fishery ###
-  amax = 12    #Going to be changed to 18, maximum age, in months *possibly taken from Geiger 2010
+
+  amax = 18    #Going to be changed to 18, maximum age, in months *possibly taken from Geiger 2010
   Ro = 1000       #recruitment at unfished conditions *made up, theoretical
   CR = 8          #recruitment compensation ratio *guessed, could look back at CR of other bivalves
   vbk = 4/12      #von bertelanfy metabolic parameter *initially guessed by manually matching to barber and blake, lines kinda up with Wolf & Mendo
@@ -54,7 +55,9 @@ rm(list = ls())
   Lfished = vector(length=amax); Lfished[1]=1;  for (i in 2:amax){Lfished[i]=Lfished[i-1]*Surv[i-1]*(1-U*Vul[i-1])}; #Lfished[Amax] = Lfished[(Amax-1)]*surv[(Amax-1)]*(1-U*vul[(Amax-1)])/(1-surv[(Amax-1)]*(1-U*vul[(Amax-1)]))       #Standard with special calculation for terminal fished survivorship
 
   Mat = 1/(1+exp(-(Age-amat)/msd))                #Vulnerability
-  Fec = .1*Mat*Wt # the 0.1 is from the Barber & Blake paper, but Jen will double check
+
+  Fec = .1*Wt # the 0.1 is from the Barber & Blake paper, but Jen will double check
+
   #Fec = ifelse((Wt-Wt[amat])<0,0,Wt-Wt[amat])           #Fecundity
 
 plot(Age, TL)
@@ -73,6 +76,8 @@ plot(Age, Fec)
   no = Ro*npro                          #numbers at unfished conditions
   vbo = Ro*vbpro                        #vulnerable biomass at unfished conditions
   #recruitment parms and calcs#
+
+  ### THESE NEED TO BE ADJUSTMENT TO DEAL WITH PROP SPAWN
     bha = CR/epro                         #beverton holt a parm
     bhb = (CR-1)/(Ro*epro)                #beverton holt b parm
     r.eq = (bha*eprf-1)/(bhb*eprf)        #equilibrium recruitment
@@ -95,6 +100,14 @@ plot(Age, Fec)
   nage = matrix(0,months,amax)                                                     #set up matrix
       #initializing first year age structure
       nage[1,1]=Ro#*Lo                                                              #numbers at age, year 1
+      nage[cbind(1:amax,1:amax)] <- Ro*Lo
+      #initializing first year of all year dependent values, note, these must go in a specific order
+      prop_spawn<-c(0,0,0,0,0,0.1,0.2,0.5,0.8,0.8,0.2,0.1)                          #proportion of indv that spawn in each month (across ages), currently dummy values 
+      #prop_spawn <- prop_spawn/sum(prop_spawn) ### requires adjustment of a/b BH rec
+      prop_2spawn <- c(0.3,0.5,1,0,0,0,0,0,0,0,0,0)
+      #prop_2spawn <- prop_2spawn/sum(prop_2spawn) ### requires adjustment of a/b BH rec
+
+      prop_bspawn <- prop_spawn + prop_2spawn
       #initializing first year of all year dependent values, note, these must go in a specific order
       prop_spawn<-c(0,0,0,0,0,0.2,0.2,0.5,0.8,0.8,0.2,0)                          #proportion of indv that spawn in each month (across ages), currently dummy values 
       #proc_err[1] = 0 #rnorm(1,0,sdpro)                                          #first value of process error
@@ -107,13 +120,15 @@ plot(Age, Fec)
       yield[1] = hr[1]*VB [1]                                                     #first value of yield
       cpue[1] = yield[1]/et[1]                                                    #first value of cpue
 
-      eggs<-rep(0, 120)                                                          #Filling in eggs (in each month) vector with zeroes
+      eggs <- rep(0, months)                                                          #Filling in eggs (in each month) vector with zeroes
+
       #calculations for vectors--i.e. year but not age varying components of model
       for( i in 2:months) {
         #recruitment
           nage[i,1] = 0              #the recruitment without process error
           if(i %% 12==1){
-            eggs[i-1]<-sum( rowSums(Fec * nage[(i-12):(i-1),]) * prop_spawn )
+            eggs[i-1] <- sum((Fec * Mat * t(nage[(i-12):(i-1),])) %*% diag(prop_bspawn))
+
             nage[i,1] = bha*eggs[i-1]/(1+bhb*eggs[i-1])              #the recruitment without process error
                }
 
@@ -121,7 +136,8 @@ plot(Age, Fec)
         #nage[i,1] = bha*eggs[i-1]/(1+bhb*eggs[i-1])*exp(proc_err[i-1])              #the recruitment each year, a product of beverton holt, eggs, and process error ****note this is going to be changed to be a function of a habitat dependent b parmameter, see DD habitat excel file
 
           for(j in 2:amax) {
-          nage[i,j] = nage[i-1,j-1]*Surv[j-1]*(1-Vul[j-1]*hr[i-1])
+            nage[i,j] = nage[i-1,j-1]*Surv[j-1]*(1-Vul[j-1]*hr[i-1])
+
           }
           
         N[i] = sum(nage[i,])                                                      #total numbers, sum of numbers at each age
@@ -140,4 +156,7 @@ plot(Age, Fec)
   #Simple plot of VB, effort
     plot(1:months, VB, type="l", col="blue", lwd=3, ylim=c(0, max(VB)))
     lines(1:months, et, col="red", lwd=3)
+
+
+    plot(1:months, nage[,1], type='l')
 
