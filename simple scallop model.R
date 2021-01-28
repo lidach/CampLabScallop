@@ -18,6 +18,9 @@ rm(list = ls())
 # Parameters #
 ################################################################################
 
+
+#Just testing git desktop
+
 ### Constants, life history and fishery ###
   amax = 12    #Going to be changed to 18, maximum age, in months *possibly taken from Geiger 2010
   Ro = 1000       #recruitment at unfished conditions *made up, theoretical

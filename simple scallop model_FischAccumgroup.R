@@ -40,7 +40,7 @@ rm(list = ls())
                       #mortality scaling, we need to say what the constant M is representing.
   lorenzc = 1     #exponent of the scaling of mortality with length. 
 
-  effort=0     #fixing effort at a constant level, so changing to deterministic (non-dynamic) effort
+  effort=2     #fixing effort at a constant level, so changing to deterministic (non-dynamic) effort
   q=0.0003        #fixing q at a constant
   U = 0           #harvest rate, used for equilibrium calculations only. In the model harvest rate (hr) is used as 1-exp(-effort *catchability), allowing for time varying effort
  
@@ -59,6 +59,18 @@ rm(list = ls())
   Fec = .1*Wt # the 0.1 is from the Barber & Blake paper, but Jen will double check
 
   #Fec = ifelse((Wt-Wt[amat])<0,0,Wt-Wt[amat])           #Fecundity
+
+  #Bag limit stuff
+    #Calculating # scallops per gallon -- first need a rough bag limit, i.e. how many scallops does it take to fill a limit?
+    #from Zach citing Geiger 2006
+    ash = 50  #avg shell height in mm??
+    gs = (-6.704*ash + 480.96)/2  #So...this is obviously not correct. I either missed something or the units are off. I couldn't find this equation in Geiger 2006
+    #Geiger also showed that across most of the areas sampled, about 100-125 scallops fills the 2gal limit in July & Aug (peak months), so going with bag of 115
+    bag <- 115                      #assumed bag limit
+    maxcat <- (bag*2.5)             #theoretical max anyone can catch 
+    ret <- pmin(0:maxcat,bag)       #how many can be retained for every individual option of numbers caught
+    p.legal <- rep(1,length(Age))   #not actually bag but would be used if there was a minimum size limit like 1/(1+exp(-1.7*(TL-MLL)/0.07))
+
 
 plot(Age, TL)
 plot(Age, Mat)
@@ -94,7 +106,9 @@ plot(Age, Fec)
   months = 120
   #setting up space for model outputs
     eggs = vector(length=months); N=vector(length=months); B=vector(length=months); VB=vector(length=months); hr=vector(length=months); 
-    yield = vector(length=months); cpue = vector(length=months); qt = vector(length=months); et = vector(length=months); 
+    yield_n = vector(length=months); yield_b = vector(length=months);cpue_n = vector(length=months); cpue_b = vector(length=months); 
+    qt = vector(length=months); et = vector(length=months); hcpue=vector(length=months); hpue=vector(length=months); pr_hr=vector(length=months);
+    hr_sel=matrix(0,months,amax); hr_harv=matrix(0,months,amax);
 
   #numbers at age of fish
   nage = matrix(0,months,amax)                                                     #set up matrix
@@ -117,8 +131,17 @@ plot(Age, Fec)
       qt[1] = q                                                                   #Here fixing q at a constant
       et[1] = effort                                                              #Here fixing effort at a constant
       hr[1] = 1-exp(-qt[1]*et[1])                                                 #first value of harvest rate
-      yield[1] = hr[1]*VB [1]                                                     #first value of yield
-      cpue[1] = yield[1]/et[1]                                                    #first value of cpue
+    hr_sel[1,] = hr[1]*Vul                                                      #age-specific capture rate according to selectivity
+    hr_harv[1,] =  hr[1]*Vul*p.legal                                            #age-specific capture of legally big animals (adjusting hr_sel for size limit)
+    hcpue[1] = sum(nage[1,]*hr_harv[1,])/et[1]                                     #raw catch rates not accounting for bag *also not accounting for loss due to So
+    hcpue[1] = ifelse(is.nan(hcpue[1]),0,hcpue[1])                              #trap for cases where effort = 0, will throw div0 errors (NaN)
+    hpue[1] = sum(dpois(0:maxcat,hcpue[1])*ret)                                    #rate of actually harvestable fish accounting for bag and size
+    pr_hr[1] = (hpue[1]/hcpue[1])                                               #probability of actually harvesting fish of legal size
+    pr_hr[1] = ifelse(is.nan(pr_hr[1]),0,pr_hr[1])                              #Another trap, becuase hcpue could be 0
+    yield_n[1] = sum(hr_harv[1,]*pr_hr[1]*nage[1,])
+    yield_b[1] = sum(hr_harv[1,]*pr_hr[1]*nage[1,]*Wt) 
+    cpue_n[1] = yield_n[1]/et[1]                                                    #first value of cpue
+    cpue_b[1] = yield_b[1]/et[1]                                                    #first value of cpue
 
       eggs <- rep(0, months)                                                          #Filling in eggs (in each month) vector with zeroes
 
@@ -132,22 +155,39 @@ plot(Age, Fec)
             nage[i,1] = bha*eggs[i-1]/(1+bhb*eggs[i-1])              #the recruitment without process error
                }
 
-        #nage[i,1] = bha*eggs[i-1]/(1+bhb*eggs[i-1])              #the recruitment without process error
-        #nage[i,1] = bha*eggs[i-1]/(1+bhb*eggs[i-1])*exp(proc_err[i-1])              #the recruitment each year, a product of beverton holt, eggs, and process error ****note this is going to be changed to be a function of a habitat dependent b parmameter, see DD habitat excel file
+        #nage[i,1] = bha*eggs[i-1]/(1+bhb*eggs[i-1])                          #the recruitment without process error
+        #nage[i,1] = bha*eggs[i-1]/(1+bhb*eggs[i-1])*exp(proc_err[i-1])       #the recruitment each year, a product of beverton holt, eggs, and process error ****note this is going to be changed to be a function of a habitat dependent b parmameter, see DD habitat excel file
+
+    #bag limit
+      qt[i] = q                                                                  #catchability when fixed as a constant
+      et[i] = effort 
+      hr[i] = 1-exp(-(et[i]*q))
+      hr_sel[i,] = hr[i]*Vul
+      hr_harv[i,] = hr[i]*Vul*p.legal
+        for(j in 2:amax) {                                                      #Only have age 1 at this point, so need to fill in other ages to calculate catch rates
+           nage[i,j]=nage[i-1,j-1]*Surv[j-1]                                    #Note this assumes NO natural mortality yet, so these are theoretical catch rates if we think M happens before F in annual cycle
+           }
+      hcpue[i] = sum(nage[i,]*hr_harv[i,])/et[i]                                #expected catch rate of harvestable fish
+      hcpue[i] = ifelse(is.nan(hcpue[i]),0,hcpue[i])                            #div0 trap for effort = 0
+      hpue[i] = sum(dpois(0:maxcat,hcpue[i])*ret)                                  #poisson prob of each capture event * number of fish that can be retained on each capture event, summed
+      pr_hr[i] = (hpue[i]/hcpue[i])                                     #probabilty of actually harvesting (i.e. landing)
+      pr_hr[i] = ifelse(is.nan(pr_hr[i]),0,pr_hr[i])                            #trap for effort =0...meaning hcpue=0
 
           for(j in 2:amax) {
-            nage[i,j] = nage[i-1,j-1]*Surv[j-1]*(1-Vul[j-1]*hr[i-1])
+            nage[i,j] = nage[i-1,j-1]*Surv[j-1]*
+            (1-hr_harv[i-1,j-1]*pr_hr[i-1]) 
+            
+            #nage[i,j] = nage[i-1,j-1]*Surv[j-1]*(1-Vul[j-1]*hr[i-1])
 
           }
           
         N[i] = sum(nage[i,])                                                      #total numbers, sum of numbers at each age
         B[i] = sum(nage[i,]*Wt)                                                   #total biomass, sum of numbers at age * weight at age
         VB[i] = sum(nage[i,]*Wt*Vul)                                              #vulernable biomass, sum of numbers at age * weight at age * vul at age
-        qt[i] = q                                                                  #catchability when fixed as a constant
-        et[i] = effort                                                             #effort when fixed as a constant
-        hr[i] = 1-exp(-qt[i]*et[i])                                                #harvest rate, depends on effort and q
-        yield[i] = hr[i]*VB [i]                                                    #yield, dependent on hr and vulnerable biomass
-        cpue[i] = yield[i]/et[i]                                                   #cpue, yeild/effort
+        yield_n[i] = sum(hr_harv[i,]*pr_hr[i]*nage[i,])                           #yeild in numbers
+        yield_b[i] = sum(hr_harv[i,]*pr_hr[i]*nage[i,]*Wt)                        #yeild in biomass
+        cpue_n[i] = yield_n[i]/et[i]                                                   #cpue in numbers, yeild/effort
+        cpue_b[i] = yield_b[i]/et[i]                                                   #cpue in bimoass, yeild/effort
       }
 
 ################################################################################
