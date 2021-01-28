@@ -40,9 +40,11 @@ rm(list = ls())
                       #mortality scaling, we need to say what the constant M is representing.
   lorenzc = 1     #exponent of the scaling of mortality with length. 
 
+  FM_flag = 1	#flag=1 for constant q OR flag=2 for effort varying q, flag=3 for constant U
   effort=2     #fixing effort at a constant level, so changing to deterministic (non-dynamic) effort
   q=0.0003        #fixing q at a constant
   U = 0           #harvest rate, used for equilibrium calculations only. In the model harvest rate (hr) is used as 1-exp(-effort *catchability), allowing for time varying effort
+  qmax = .0005       #qmax is the maximum catchability (used in vary q with abundance)
  
 ### Age-specifc vectors ###
   Age = seq(1,amax)                             #Age
@@ -55,9 +57,7 @@ rm(list = ls())
   Lfished = vector(length=amax); Lfished[1]=1;  for (i in 2:amax){Lfished[i]=Lfished[i-1]*Surv[i-1]*(1-U*Vul[i-1])}; #Lfished[Amax] = Lfished[(Amax-1)]*surv[(Amax-1)]*(1-U*vul[(Amax-1)])/(1-surv[(Amax-1)]*(1-U*vul[(Amax-1)]))       #Standard with special calculation for terminal fished survivorship
 
   Mat = 1/(1+exp(-(Age-amat)/msd))                #Vulnerability
-
   Fec = .1*Wt # the 0.1 is from the Barber & Blake paper, but Jen will double check
-
   #Fec = ifelse((Wt-Wt[amat])<0,0,Wt-Wt[amat])           #Fecundity
 
   #Bag limit stuff
@@ -72,9 +72,9 @@ rm(list = ls())
     p.legal <- rep(1,length(Age))   #not actually bag but would be used if there was a minimum size limit like 1/(1+exp(-1.7*(TL-MLL)/0.07))
 
 
-plot(Age, TL)
-plot(Age, Mat)
-plot(Age, Fec)
+# plot(Age, TL)
+# plot(Age, Mat)
+# plot(Age, Fec)
 
 ### Calculations from vectors ###
   epro = sum(Lo*Fec)                    #eggs-per-recruit unfished conditions
@@ -87,6 +87,7 @@ plot(Age, Fec)
   bo = Ro*bpro                          #biomass at unfished condtions
   no = Ro*npro                          #numbers at unfished conditions
   vbo = Ro*vbpro                        #vulnerable biomass at unfished conditions
+  kq = 2/bo                             # scaling constant for abundance varying q (from Pine et al 2015)
   #recruitment parms and calcs#
 
   ### THESE NEED TO BE ADJUSTMENT TO DEAL WITH PROP SPAWN
@@ -130,57 +131,66 @@ plot(Age, Fec)
       VB[1] = sum(nage[1,]*Wt*Vul)                                                #first value of vulernable biomass
       qt[1] = q                                                                   #Here fixing q at a constant
       et[1] = effort                                                              #Here fixing effort at a constant
-      hr[1] = 1-exp(-qt[1]*et[1])                                                 #first value of harvest rate
-    hr_sel[1,] = hr[1]*Vul                                                      #age-specific capture rate according to selectivity
-    hr_harv[1,] =  hr[1]*Vul*p.legal                                            #age-specific capture of legally big animals (adjusting hr_sel for size limit)
-    hcpue[1] = sum(nage[1,]*hr_harv[1,])/et[1]                                     #raw catch rates not accounting for bag *also not accounting for loss due to So
-    hcpue[1] = ifelse(is.nan(hcpue[1]),0,hcpue[1])                              #trap for cases where effort = 0, will throw div0 errors (NaN)
-    hpue[1] = sum(dpois(0:maxcat,hcpue[1])*ret)                                    #rate of actually harvestable fish accounting for bag and size
-    pr_hr[1] = (hpue[1]/hcpue[1])                                               #probability of actually harvesting fish of legal size
-    pr_hr[1] = ifelse(is.nan(pr_hr[1]),0,pr_hr[1])                              #Another trap, becuase hcpue could be 0
-    yield_n[1] = sum(hr_harv[1,]*pr_hr[1]*nage[1,])
-    yield_b[1] = sum(hr_harv[1,]*pr_hr[1]*nage[1,]*Wt) 
-    cpue_n[1] = yield_n[1]/et[1]                                                    #first value of cpue
-    cpue_b[1] = yield_b[1]/et[1]                                                    #first value of cpue
+  	  # fishing mortality estimates                                                #first value of vulernable biomass 
+    	  if(FM_flag == 1){                                                           # Here fixing q at a constant
+      	 	qt[1] = q                                                                  
+      	 	hr[1] = 1-exp(-qt[1]*et[1])
+    	  } else if (FM_flag == 2){                                                  # first value for varing with effort or abundance (VB) (from Pine et al 2015)
+      	 	qt[1] = qmax/(1+kq*B[i])
+      	 	hr[1] = 1-exp(-qt[1]*et[1])
+    	  } else if (FM_flag == 3){                                                  # Fixing hr as a constant U 
+     		 hr[1] = U
+       	}                                                #first value of harvest rate
+      hr_sel[1,] = hr[1]*Vul                                                      #age-specific capture rate according to selectivity
+      hr_harv[1,] =  hr[1]*Vul*p.legal                                            #age-specific capture of legally big animals (adjusting hr_sel for size limit)
+      hcpue[1] = sum(nage[1,]*hr_harv[1,])/et[1]                                     #raw catch rates not accounting for bag *also not accounting for loss due to So
+      hcpue[1] = ifelse(is.nan(hcpue[1]),0,hcpue[1])                              #trap for cases where effort = 0, will throw div0 errors (NaN)
+      hpue[1] = sum(dpois(0:maxcat,hcpue[1])*ret)                                    #rate of actually harvestable fish accounting for bag and size
+      pr_hr[1] = (hpue[1]/hcpue[1])                                               #probability of actually harvesting fish of legal size
+      pr_hr[1] = ifelse(is.nan(pr_hr[1]),0,pr_hr[1])                              #Another trap, becuase hcpue could be 0
+      yield_n[1] = sum(hr_harv[1,]*pr_hr[1]*nage[1,])
+      yield_b[1] = sum(hr_harv[1,]*pr_hr[1]*nage[1,]*Wt) 
+      cpue_n[1] = yield_n[1]/et[1]                                                    #first value of cpue
+      cpue_b[1] = yield_b[1]/et[1]                                                    #first value of cpue
 
       eggs <- rep(0, months)                                                          #Filling in eggs (in each month) vector with zeroes
 
       #calculations for vectors--i.e. year but not age varying components of model
-      for( i in 2:months) {
+      for(i in 2:months){
         #recruitment
           nage[i,1] = 0              #the recruitment without process error
           if(i %% 12==1){
             eggs[i-1] <- sum((Fec * Mat * t(nage[(i-12):(i-1),])) %*% diag(prop_bspawn))
 
             nage[i,1] = bha*eggs[i-1]/(1+bhb*eggs[i-1])              #the recruitment without process error
-               }
+          }
 
         #nage[i,1] = bha*eggs[i-1]/(1+bhb*eggs[i-1])                          #the recruitment without process error
         #nage[i,1] = bha*eggs[i-1]/(1+bhb*eggs[i-1])*exp(proc_err[i-1])       #the recruitment each year, a product of beverton holt, eggs, and process error ****note this is going to be changed to be a function of a habitat dependent b parmameter, see DD habitat excel file
 
-    #bag limit
-      qt[i] = q                                                                  #catchability when fixed as a constant
-      et[i] = effort 
-      hr[i] = 1-exp(-(et[i]*q))
-      hr_sel[i,] = hr[i]*Vul
-      hr_harv[i,] = hr[i]*Vul*p.legal
-        for(j in 2:amax) {                                                      #Only have age 1 at this point, so need to fill in other ages to calculate catch rates
-           nage[i,j]=nage[i-1,j-1]*Surv[j-1]                                    #Note this assumes NO natural mortality yet, so these are theoretical catch rates if we think M happens before F in annual cycle
-           }
-      hcpue[i] = sum(nage[i,]*hr_harv[i,])/et[i]                                #expected catch rate of harvestable fish
-      hcpue[i] = ifelse(is.nan(hcpue[i]),0,hcpue[i])                            #div0 trap for effort = 0
-      hpue[i] = sum(dpois(0:maxcat,hcpue[i])*ret)                                  #poisson prob of each capture event * number of fish that can be retained on each capture event, summed
-      pr_hr[i] = (hpue[i]/hcpue[i])                                     #probabilty of actually harvesting (i.e. landing)
-      pr_hr[i] = ifelse(is.nan(pr_hr[i]),0,pr_hr[i])                            #trap for effort =0...meaning hcpue=0
+        #bag limit
+          qt[i] = q                                                                  #catchability when fixed as a constant
+          et[i] = effort 
+          hr[i] = 1-exp(-(et[i]*q))
+          hr_sel[i,] = hr[i]*Vul
+          hr_harv[i,] = hr[i]*Vul*p.legal
+            for(j in 2:amax) {                                                      #Only have age 1 at this point, so need to fill in other ages to calculate catch rates
+               nage[i,j]=nage[i-1,j-1]*Surv[j-1]                                    #Note this assumes NO natural mortality yet, so these are theoretical catch rates if we think M happens before F in annual cycle
+               }
+          hcpue[i] = sum(nage[i,]*hr_harv[i,])/et[i]                                #expected catch rate of harvestable fish
+          hcpue[i] = ifelse(is.nan(hcpue[i]),0,hcpue[i])                            #div0 trap for effort = 0
+          hpue[i] = sum(dpois(0:maxcat,hcpue[i])*ret)                                  #poisson prob of each capture event * number of fish that can be retained on each capture event, summed
+          pr_hr[i] = (hpue[i]/hcpue[i])                                     #probabilty of actually harvesting (i.e. landing)
+          pr_hr[i] = ifelse(is.nan(pr_hr[i]),0,pr_hr[i])                            #trap for effort =0...meaning hcpue=0
 
-          for(j in 2:amax) {
-            nage[i,j] = nage[i-1,j-1]*Surv[j-1]*
-            (1-hr_harv[i-1,j-1]*pr_hr[i-1]) 
-            
-            #nage[i,j] = nage[i-1,j-1]*Surv[j-1]*(1-Vul[j-1]*hr[i-1])
-
-          }
+        for(j in 2:amax) {
+          nage[i,j] = nage[i-1,j-1]*Surv[j-1]*
+          (1-hr_harv[i-1,j-1]*pr_hr[i-1]) 
           
+          #nage[i,j] = nage[i-1,j-1]*Surv[j-1]*(1-Vul[j-1]*hr[i-1])
+
+        }
+              
         N[i] = sum(nage[i,])                                                      #total numbers, sum of numbers at each age
         B[i] = sum(nage[i,]*Wt)                                                   #total biomass, sum of numbers at age * weight at age
         VB[i] = sum(nage[i,]*Wt*Vul)                                              #vulernable biomass, sum of numbers at age * weight at age * vul at age
