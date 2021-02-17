@@ -28,14 +28,15 @@ scenario <- list(
                   lorenzc = 1,
                   #this sucks, need to change to 1:amax; probably x/sum(x) and go into EPRo/f
                   prob_spawn = c(0,0,0,0,0,0.1,0.2,0.5,0.8,0.8,0.2,0.1,0.3,0.5,1,1,1,1)),
-                  catch = list(FM_flag = "q",
-                               q_flag = "constant",
-                                effort = 0,
+                  catch = list(FM_flag = "constant", #q or constant
+                               q_flag = "constant", #constant or VB
+                                effort = c(0,0,0,0,0,0,2500,1000,500,0,0,0), #rep(1000,12) for constant
                                 q = 0.0003,
-                                U = 0,
+                                U = 0.6,
                                 qmax = .0005,
-                                bag_unit = "gallon",
-                                bag = 2),
+                                bag_unit = "gallon", #gallon or numbers
+                                bag = c(2,2,2,2,2,2,3,2,1,2,2,2), # rep(2,12) for constant
+                                season = c(0,0,0,0,0,0,1,1,1,0,0,0)), #rep(1,12) for open
                   sim = list(month = 120)
                   )
 
@@ -70,14 +71,14 @@ scallop_model_fun <- function(scenario){
     #switch for bag limit units
     scenario$catch <- within(scenario$catch,{
       if(bag_unit=='gallon'){
-        maxcat <- bag*2.5             #theoretical max anyone can catch 
-        catch.rate <- seq(0,maxcat,by=0.1)
-        ret <- pmin(catch.rate,bag)       #how many can be retained for every individual option of numbers caught
+        maxcat <- bag*2.5          #theoretical max anyone can catch 
+        catch.rate <- lapply(maxcat, function(x) seq(0,x,by=0.1))
+        ret <- lapply(1:12, function(x) pmin(catch.rate[[x]],bag[x]))      #how many can be retained for every individual option of numbers caught
         p.legal <- rep(1,length(scenario$life.vec$Age))   #not actually bag but would be used if there was a minimum size limit like 1/(1+exp(-1.7*(TL-MLL)/0.07))
       }else if(bag_unit=="numbers"){
         maxcat <- ceiling(bag*2.5)             #theoretical max anyone can catch 
-        catch.rate <- seq(0,maxcat,by=1)
-        ret <- pmin(catch.rate,bag)       #how many can be retained for every individual option of numbers caught
+        catch.rate <- lapply(maxcat, function(x) seq(0,x,by=1))
+        ret <- lapply(1:12, function(x) pmin(catch.rate[[x]],bag[x]))       #how many can be retained for every individual option of numbers caught
         p.legal <- rep(1,length(scenario$life.vec$Age))   #not actually bag but would be used if there was a minimum size limit like 1/(1+exp(-1.7*(TL-MLL)/0.07))
       }
     })
@@ -133,7 +134,7 @@ scallop_model_fun <- function(scenario){
       }else if(scenario$catch$q_flag=='VB'){
         qt[1] <- scenario$catch$qmax/(1+scenario$per.rec$kq*B[1])
       }
-      et[1] <- scenario$catch$effort #Here fixing effort at a constant
+      et[1] <- scenario$catch$effort[1] * scenario$catch$season[1] #Here fixing effort at a constant
       #swith for fishing mortality
       if(scenario$catch$FM_flag == "q"){ 
         # Here fixing q at a constant
@@ -141,7 +142,7 @@ scallop_model_fun <- function(scenario){
         hr[1] <- 1-exp(-qt[1]*et[1])
       } else if (scenario$catch$FM_flag == "constant"){
         # Fixing hr as a constant U 
-        hr[1] <- scenario$catch$U
+        hr[1] <- scenario$catch$U*scenario$catch$season[1]
       } 
       hr_sel[1,] <- hr[1]*scenario$life.vec$Vul #age-specific capture rate according to selectivity
       hr_harv[1,] <-  hr[1]*scenario$life.vec$Vul*scenario$catch$p.legal #age-specific capture of legally big animals (adjusting hr_sel for size limit)
@@ -150,13 +151,13 @@ scallop_model_fun <- function(scenario){
       if(scenario$catch$bag_unit=="gallon"){
         require(truncnorm)
         #using a half-normal truncated at zero to get the density of 
-        dens.catch <- dtruncnorm(scenario$catch$catch.rate, a=0, mean=hcpue[1], sd=hcpue[1]*0.4)
+        dens.catch <- dtruncnorm(scenario$catch$catch.rate[[1]], a=0, mean=hcpue[1], sd=hcpue[1]*0.4)
         dens.catch <- dens.catch/sum(dens.catch) #need to sum to 1 to prevent loss from density range
-        hpue[1] <- sum(dens.catch*scenario$catch$ret)  #rate of actually harvestable fish accounting for bag and size
+        hpue[1] <- sum(dens.catch*scenario$catch$ret[[1]])  #rate of actually harvestable fish accounting for bag and size
       }else{
-        dens.catch <- dpois(scenario$catch$catch.rate,hcpue[1])
+        dens.catch <- dpois(scenario$catch$catch.rate[[1]],hcpue[1])
         dens.catch <- dens.catch/sum(dens.catch) #need to sum to 1 to prevent loss from density range
-        hpue[1] <- sum(dens.catch*scenario$catch$ret)  #rate of actually harvestable fish accounting for bag and size
+        hpue[1] <- sum(dens.catch*scenario$catch$ret[[1]])  #rate of actually harvestable fish accounting for bag and size
       }
       
       pr_hr[1] <- (hpue[1]/hcpue[1])  #probability of actually harvesting fish of legal size
@@ -165,6 +166,9 @@ scallop_model_fun <- function(scenario){
       yield_b[1] <- sum(hr_harv[1,]*pr_hr[1]*nage[1,]*scenario$life.vec$Wt) 
       cpue_n[1] <- yield_n[1]/et[1] #first value of cpue
       cpue_b[1] <- yield_b[1]/et[1] #first value of cpue
+  #time keeper
+    timer <- seq(1,months) %% 12
+    timer[timer==0] <- 12
   #simulate
     for(i in 2:months){
         #recruitment
@@ -187,7 +191,7 @@ scallop_model_fun <- function(scenario){
           }else if(scenario$catch$q_flag=='VB'){
             qt[i] <- scenario$catch$qmax/(1+scenario$catch$kq*B[i])
           }
-          et[i] <- scenario$catch$effort #Here fixing effort at a constant
+          et[i] <- scenario$catch$effort[timer[i]] * scenario$catch$season[timer[i]] #Here fixing effort at a constant
           #swith for fishing mortality
           if(scenario$catch$FM_flag == "q"){ 
             # Here fixing q at a constant
@@ -195,7 +199,7 @@ scallop_model_fun <- function(scenario){
             hr[i] <- 1-exp(-qt[i]*et[i])
           } else if (scenario$catch$FM_flag == "constant"){
             # Fixing hr as a constant U 
-            hr[i] <- scenario$catch$U
+            hr[i] <- scenario$catch$U * scenario$catch$season[timer[i]]
           } 
           hr_sel[i,] <- hr[i]*scenario$life.vec$Vul
           hr_harv[i,] <- hr[i]*scenario$life.vec$Vul*scenario$catch$p.legal
@@ -203,13 +207,13 @@ scallop_model_fun <- function(scenario){
           hcpue[i] <- ifelse(is.nan(hcpue[i]),0,hcpue[i])  #div0 trap for effort = 0
           if(scenario$catch$bag_unit=="gallon"){
             #using a half-normal truncated at zero to get the density of 
-            dens.catch <- dtruncnorm(scenario$catch$catch.rate, a=0, mean=hcpue[i], sd=hcpue[i]*0.4)
+            dens.catch <- dtruncnorm(scenario$catch$catch.rate[[timer[i]]], a=0, mean=hcpue[i], sd=hcpue[i]*0.4)
             dens.catch <- dens.catch/sum(dens.catch) #need to sum to 1 to prevent loss from density range
-            hpue[i] <- sum(dens.catch*scenario$catch$ret)  #rate of actually harvestable fish accounting for bag and size
+            hpue[i] <- sum(dens.catch*scenario$catch$ret[[timer[i]]])  #rate of actually harvestable fish accounting for bag and size
           }else{
-            dens.catch <- dpois(scenario$catch$catch.rate,hcpue[i])
+            dens.catch <- dpois(scenario$catch$catch.rate[[timer[i]]],hcpue[i])
             dens.catch <- dens.catch/sum(dens.catch) #need to sum to 1 to prevent loss from density range
-            hpue[i] <- sum(dens.catch*scenario$catch$ret)  #rate of actually harvestable fish accounting for bag and size
+            hpue[i] <- sum(dens.catch*scenario$catch$ret[[timer[i]]])  #rate of actually harvestable fish accounting for bag and size
           }
           pr_hr[i] <- (hpue[i]/hcpue[i])  #probabilty of actually harvesting (i.e. landing)
           pr_hr[i] <- ifelse(is.nan(pr_hr[i]),0,pr_hr[i])  #trap for effort =0...meaning hcpue=0
@@ -253,10 +257,13 @@ scallop_model_fun <- function(scenario){
 
   #Simple plot of VB, effort
     with(run1$results,{
-        par(mfrow=c(1,2))
+        par(mfrow=c(3,1), mar=c(4,4,1,1))
         plot(time, VB, type="l", col="blue", 
              lwd=3, ylim=c(0, max(VB)))
-        lines(time, et, col="red", lwd=3)
+        abline(lm(VB~time), lwd=4)
+        et2 <- et
+        et2[et2==0] <- NA
+        plot(time, et2, col="red", lwd=3, type='l')
         plot(time, recruits, type='l')
     })
     
