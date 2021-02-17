@@ -27,14 +27,13 @@ scenario <- list(
                   M = 0.2,
                   lorenzc = 1,
                   #this sucks, need to change to 1:amax; probably x/sum(x) and go into EPRo/f
-                  prob_spawn = c(0.3,0.5,1,0,0,0.1,0.2,0.5,0.8,0.8,0.2,0.1)),
+                  prob_spawn = c(0,0,0,0,0,0.1,0.2,0.5,0.8,0.8,0.2,0.1,0.3,0.5,1,1,1,1)),
                   catch = list(FM_flag = "q",
                                q_flag = "constant",
-                                effort = 2,
+                                effort = 0,
                                 q = 0.0003,
                                 U = 0,
                                 qmax = .0005,
-                                kq = 0.5, #probably bad
                                 bag_unit = "gallon",
                                 bag = 2),
                   sim = list(month = 120)
@@ -58,6 +57,9 @@ scallop_model_fun <- function(scenario){
         }
         life.vec$Mat <- 1/(1+exp(-(life.vec$Age-amat)/msd))
         life.vec$Fec <- .1*life.vec$Wt
+        life.vec$prob_spawn <- 0
+        life.vec$prob_spawn[1:12] <- prob_spawn[1:12]/sum(prob_spawn[1:12])
+        life.vec$prob_spawn[13:18] <- prob_spawn[13:18]/sum(prob_spawn[13:18])
         return(life.vec)
     })
   #bag limit 
@@ -82,6 +84,8 @@ scallop_model_fun <- function(scenario){
   #per recruit section
     scenario$per.rec <- with(scenario$life.vec, {
       per.rec <- list()
+      per.rec$epro_spawn <- sum(Lo*Fec*Mat*prob_spawn) #eggs-per-recruit unfished conditions
+      per.rec$eprf_spawn <- sum(Lfished*Fec*Mat*prob_spawn) #eggs-per-recruit fished conditions
       per.rec$epro <- sum(Lo*Fec*Mat) #eggs-per-recruit unfished conditions
       per.rec$eprf <- sum(Lfished*Fec*Mat) #eggs-per-recruit fished conditions
       per.rec$bpro <- sum(Wt,Lo) #biomass-per-recruit unfished conditions
@@ -98,9 +102,12 @@ scallop_model_fun <- function(scenario){
   #recruitment calculations
     scenario$recruit <- with(scenario$per.rec,{
       recruit <- list()
-      recruit$bha <- scenario$life$CR/epro                         #beverton holt a parm
-      recruit$bhb <- (scenario$life$CR-1)/(scenario$life$Ro*epro)                #beverton holt b parm
-      recruit$r.eq <- (recruit$bha*eprf-1)/(recruit$bhb*eprf)        #equilibrium recruitment
+      recruit$bha <- scenario$life$CR/epro #beverton holt a parm
+      recruit$bhb <- (scenario$life$CR-1)/(scenario$life$Ro*epro) #beverton holt b parm
+      recruit$bha_spawn <- scenario$life$CR/epro_spawn #beverton holt a parm
+      recruit$bhb_spawn <- (scenario$life$CR-1)/(scenario$life$Ro*epro_spawn) #beverton holt b parm
+      recruit$r.eq <- (recruit$bha*eprf-1)/(recruit$bhb*eprf) #equilibrium recruitment
+      recruit$r.eq_spawn <- (recruit$bha_spawn*eprf_spawn-1)/(recruit$bhb_spawn*eprf_spawn) #equilibrium recruitment
       recruit$yield.eq <- scenario$catch$U*vbprf*recruit$r.eq
       return(recruit)
     })
@@ -112,17 +119,19 @@ scallop_model_fun <- function(scenario){
     hr_sel <- hr_harv <- nage <- matrix(0, months, amax)
   #initialization
     #numbers
-      nage[1,1] <- scenario$life$Ro #initializing first year age structure 
+      nage[1,1] <- scenario$life$Ro #initializing first year age structure
+      #need the survivors from year before...
+      nage[1,13] <- scenario$life$Ro*scenario$life.vec$Lo[13]
       #proc_err[1] = 0 #rnorm(1,0,sdpro) #first value of process error
-      N[1] <- sum(nage[1,]) #first value of total numbers
+      # N[1] <- sum(nage[1,]) #first value of total numbers
       B[1] <- sum(nage[1,]*scenario$life.vec$Wt) #first value of total biomass
-      VB[1] <- sum(nage[1,]*scenario$life.vec$Wt*scenario$life.vec$Vul) #first value of vulernable biomass
+      # VB[1] <- sum(nage[1,]*scenario$life.vec$Wt*scenario$life.vec$Vul) #first value of vulernable biomass
     #harvest
       #switch for catchability
       if(scenario$catch$q_flag == "constant"){
         qt[1] <- scenario$catch$q #Here fixing q at a constant
-      }else if(q_flag=='VB'){
-        qt[1] <- scenario$catch$qmax/(1+scenario$catch$kq*B[1])
+      }else if(scenario$catch$q_flag=='VB'){
+        qt[1] <- scenario$catch$qmax/(1+scenario$per.rec$kq*B[1])
       }
       et[1] <- scenario$catch$effort #Here fixing effort at a constant
       #swith for fishing mortality
@@ -161,9 +170,9 @@ scallop_model_fun <- function(scenario){
         #recruitment
           # nage[i,1] <- 0              #the recruitment without process error
           if((i %% 12)==1){
-            eggs[i-1] <- sum((scenario$life.vec$Fec * scenario$life.vec$Mat * t(nage[(i-12):(i-1),])) %*% scenario$life$prob_spawn)
+            eggs[i-1] <- sum(scenario$life.vec$Fec * scenario$life.vec$Mat * t(nage[(i-12):(i-1),])*scenario$life.vec$prob_spawn)
 
-            nage[i,1] <- scenario$recruit$bha*eggs[i-1]/(1+scenario$recruit$bhb*eggs[i-1])              #the recruitment without process error
+            nage[i,1] <- scenario$recruit$bha_spawn*eggs[i-1]/(1+scenario$recruit$bhb_spawn*eggs[i-1])              #the recruitment without process error
           }
 
         #nage[i,1] = bha*eggs[i-1]/(1+bhb*eggs[i-1])                          #the recruitment without process error
@@ -175,7 +184,7 @@ scallop_model_fun <- function(scenario){
           #switch for catchability
           if(scenario$catch$q_flag == "constant"){
             qt[i] <- scenario$catch$q #Here fixing q at a constant
-          }else if(q_flag=='VB'){
+          }else if(scenario$catch$q_flag=='VB'){
             qt[i] <- scenario$catch$qmax/(1+scenario$catch$kq*B[i])
           }
           et[i] <- scenario$catch$effort #Here fixing effort at a constant
