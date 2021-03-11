@@ -12,31 +12,34 @@
 
 scenario <- list( 
                  life = list(amax = 18,
-                  Ro = 1000,
-                  CR = 8,
-                  vbk = 4/12,
-                  vblinf = 65,
-                  vbt0 = 0,
-                  alw = 0.0001,
-                  alwb = 3,
-                  wmat = 12,
-                  amat = 10,
-                  msd = .1,
-                  vlh = 50,
-                  vsd = 5,
-                  M = 0.2,
-                  lorenzc = 1,
-                  #this sucks, need to change to 1:amax; probably x/sum(x) and go into EPRo/f
-                  prob_spawn = c(0,0,0,0,0,0.1,0.2,0.5,0.8,0.8,0.2,0.1,0.3,0.5,1,1,1,1)),
-                  catch = list(FM_flag = "constant", #q or constant
+                            Ro = 1e6,
+                            CR = 8,
+                            vbk = 4/12,
+                            vblinf = 65,
+                            vbt0 = 0,
+                            alw = 0.0001,
+                            alwb = 3,
+                            wmat = 12,
+                            amat = 10,
+                            msd = .1,
+                            vlh = 50,
+                            vsd = 5,
+                            M = 0.2,
+                            lorenzc = 1,
+                            prob_spawn = c(0,0,0,0,0,0.1,
+                                           0.2,0.5,0.8,0.8,0.2,0.1,
+                                           0.3,0.5,1,1,1,1)),
+                  catch = list(FM_flag = "q", #q or constant
                                q_flag = "constant", #constant or VB
-                                effort = c(0,0,0,0,0,0,2500,1000,500,0,0,0), #rep(1000,12) for constant
-                                q = 0.0003,
+                                effort = c(0,0,0,0,0,0,11415,6929,4255,0,0,0), #rep(1000,12) for constant
+                                q = 0.003,
                                 U = 0.6,
                                 qmax = .0005,
                                 bag_unit = "gallon", #gallon or numbers
                                 bag = c(2,2,2,2,2,2,3,2,1,2,2,2), # rep(2,12) for constant
-                                season = c(0,0,0,0,0,0,1,1,1,0,0,0)), #rep(1,12) for open
+                                season = c(0,0,0,0,0,0,1,1,1,0,0,0),#rep(1,12) for open
+                                e_years = seq(1,1,length.out=10) #rep(1,10) for constant
+                                ), 
                   sim = list(month = 120)
                   )
 
@@ -54,7 +57,13 @@ scallop_model_fun <- function(scenario){
         life.vec$Lo[1] <- life.vec$Lfished[1] <- 1
         for (i in 2:amax){
           life.vec$Lo[i] <- life.vec$Lo[i-1]*life.vec$Surv[i-1]
-          life.vec$Lfished[i] <- life.vec$Lfished[i-1]*life.vec$Surv[i-1]*(1-scenario$catch$U*life.vec$Vul[i-1])
+          if(scenario$catch$FM_flag=='constant'){
+            life.vec$Lfished[i] <- life.vec$Lfished[i-1]*life.vec$Surv[i-1]*(1-scenario$catch$U*life.vec$Vul[i-1])
+          }else{
+            pseudo.eff <- mean(sapply(scenario$catch$e_years, function(x) x*scenario$catch$season*scenario$catch$effort))
+            life.vec$Lfished[i] <- life.vec$Lfished[i-1]*life.vec$Surv[i-1]*(1-(1-exp(-pseudo.eff*scenario$catch$q))*life.vec$Vul[i-1])
+          }
+          
         }
         life.vec$Mat <- 1/(1+exp(-(life.vec$Age-amat)/msd))
         life.vec$Fec <- .1*life.vec$Wt
@@ -72,11 +81,11 @@ scallop_model_fun <- function(scenario){
     scenario$catch <- within(scenario$catch,{
       if(bag_unit=='gallon'){
         maxcat <- bag*2.5          #theoretical max anyone can catch 
-        catch.rate <- lapply(maxcat, function(x) seq(0,x,by=0.1))
+        catch.rate <- lapply(maxcat, function(x) seq(0,x,by=0.01))
         ret <- lapply(1:12, function(x) pmin(catch.rate[[x]],bag[x]))      #how many can be retained for every individual option of numbers caught
         p.legal <- rep(1,length(scenario$life.vec$Age))   #not actually bag but would be used if there was a minimum size limit like 1/(1+exp(-1.7*(TL-MLL)/0.07))
       }else if(bag_unit=="numbers"){
-        maxcat <- ceiling(bag*2.5)             #theoretical max anyone can catch 
+        maxcat <- ceiling(bag*2.5)#theoretical max anyone can catch 
         catch.rate <- lapply(maxcat, function(x) seq(0,x,by=1))
         ret <- lapply(1:12, function(x) pmin(catch.rate[[x]],bag[x]))       #how many can be retained for every individual option of numbers caught
         p.legal <- rep(1,length(scenario$life.vec$Age))   #not actually bag but would be used if there was a minimum size limit like 1/(1+exp(-1.7*(TL-MLL)/0.07))
@@ -116,7 +125,7 @@ scallop_model_fun <- function(scenario){
     amax <- scenario$life$amax
     months <- scenario$sim$month
   #storage
-    eggs <- N <- B <- VB <- hr <- yield_n <- yield_b <- cpue_n <- cpue_b <- qt <- et <- hcpue <- hpue <- pr_hr <- vector(length=amax)
+    eggs <- N <- B <- VB <- hr <- yield_n <- yield_b <- cpue_n <- cpue_b <- qt <- et <- hcpue <- hpue <- pr_hr <- vector(length=months)
     hr_sel <- hr_harv <- nage <- matrix(0, months, amax)
   #initialization
     #numbers
@@ -134,7 +143,7 @@ scallop_model_fun <- function(scenario){
       }else if(scenario$catch$q_flag=='VB'){
         qt[1] <- scenario$catch$qmax/(1+scenario$per.rec$kq*B[1])
       }
-      et[1] <- scenario$catch$effort[1] * scenario$catch$season[1] #Here fixing effort at a constant
+      et[1] <- scenario$catch$effort[1] * scenario$catch$e_years[1] * scenario$catch$season[1] #Here fixing effort at a constant
       #swith for fishing mortality
       if(scenario$catch$FM_flag == "q"){ 
         # Here fixing q at a constant
@@ -169,8 +178,11 @@ scallop_model_fun <- function(scenario){
   #time keeper
     timer <- seq(1,months) %% 12
     timer[timer==0] <- 12
+    yr.timer <- rep(seq(1,months/12),each=12)
   #simulate
     for(i in 2:months){
+        #check if alive
+
         #recruitment
           # nage[i,1] <- 0              #the recruitment without process error
           if((i %% 12)==1){
@@ -191,7 +203,7 @@ scallop_model_fun <- function(scenario){
           }else if(scenario$catch$q_flag=='VB'){
             qt[i] <- scenario$catch$qmax/(1+scenario$catch$kq*B[i])
           }
-          et[i] <- scenario$catch$effort[timer[i]] * scenario$catch$season[timer[i]] #Here fixing effort at a constant
+          et[i] <- scenario$catch$effort[timer[i]] * scenario$catch$e_years[yr.timer[i]] * scenario$catch$season[timer[i]] #Here fixing effort at a constant
           #swith for fishing mortality
           if(scenario$catch$FM_flag == "q"){ 
             # Here fixing q at a constant
@@ -215,10 +227,10 @@ scallop_model_fun <- function(scenario){
             dens.catch <- dens.catch/sum(dens.catch) #need to sum to 1 to prevent loss from density range
             hpue[i] <- sum(dens.catch*scenario$catch$ret[[timer[i]]])  #rate of actually harvestable fish accounting for bag and size
           }
-          pr_hr[i] <- (hpue[i]/hcpue[i])  #probabilty of actually harvesting (i.e. landing)
+          pr_hr[i] <- pmax(0,pmin((hpue[i]/hcpue[i]),1))  #probabilty of actually harvesting (i.e. landing)
           pr_hr[i] <- ifelse(is.nan(pr_hr[i]),0,pr_hr[i])  #trap for effort =0...meaning hcpue=0
         #Mortality
-          nage[i,2:amax] <- nage[i-1,1:(amax-1)]*(1-hr_harv[i-1,1:(amax-1)]*pr_hr[i-1]) 
+          nage[i,2:amax] <- nage[i-1,1:(amax-1)]*(1-hr_harv[i,1:(amax-1)] * pr_hr[i]) * scenario$life.vec$Surv[1:(amax-1)]
           #nage[i,j] = nage[i-1,j-1]*Surv[j-1]*(1-Vul[j-1]*hr[i-1])
         #Summarize B for use in catchability
           B[i] = sum(nage[i,] * scenario$life.vec$Wt)
@@ -233,9 +245,9 @@ scallop_model_fun <- function(scenario){
       recruits <- nage[,1]
   #return
     ret.l <- list(scenario = scenario,
-                  results=data.frame(
-                                     time = 1:scenario$sim$month,
+                  results=data.frame(time = 1:scenario$sim$month,
                                       N = N,
+                                      eggs = eggs,
                                       B = B,
                                       VB = VB,
                                       recruits = recruits,
@@ -247,7 +259,11 @@ scallop_model_fun <- function(scenario){
                                       qt = qt,
                                       hcpue = hcpue,
                                       hpue = hpue,
-                                      pr_hr = pr_hr))
+                                      hr = hr,
+                                      pr_hr = pr_hr),
+                  matrix = list(nage = nage,
+                                hr_sel = hr_sel,
+                                hr_harv = hr_harv))
     return(ret.l)
 }
 ###-----------------------------------------------------
@@ -257,13 +273,14 @@ scallop_model_fun <- function(scenario){
 
   #Simple plot of VB, effort
     with(run1$results,{
-        par(mfrow=c(3,1), mar=c(4,4,1,1))
+        par(mfrow=c(3,1), mar=c(3,5,1,1), las=1, mgp=c(4,1,0))
         plot(time, VB, type="l", col="blue", 
              lwd=3, ylim=c(0, max(VB)))
-        abline(lm(VB~time), lwd=4)
+        abline(lm(VB~time), lwd=2, lty=3)
         et2 <- et
         et2[et2==0] <- NA
-        plot(time, et2, col="red", lwd=3, type='l')
+        plot(time, et2, col="red", lwd=3, type='l', 
+             ylim=c(0,max(et2,na.rm=T)), ylab="Effort")
         plot(time, recruits, type='l')
     })
     
