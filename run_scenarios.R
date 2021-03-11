@@ -32,7 +32,7 @@ with(base$results,{
 # catchability - VB
 scenario1 <- scenario
 scenario1$catch$q_flag <- "VB"
-scen1 <- scallop_model_fun(scenario2)
+scen1 <- scallop_model_fun(scenario1)
 with(scen1$results,{
         par(mfrow=c(3,1), mar=c(3,5,1,1), las=1, mgp=c(4,1,0))
         plot(time, VB, type="l", col="blue", 
@@ -48,7 +48,7 @@ with(scen1$results,{
 # effort - constant within season
 scenario2 <- scenario
 scenario2$catch$effort <- c(0,0,0,0,0,0,6929,6929,6929,0,0,0)
-scen2 <- scallop_model_fun(scenario3)
+scen2 <- scallop_model_fun(scenario2)
 with(scen2$results,{
         par(mfrow=c(3,1), mar=c(3,5,1,1), las=1, mgp=c(4,1,0))
         plot(time, VB, type="l", col="blue", 
@@ -64,7 +64,7 @@ with(scen2$results,{
 # effort - increasing between years
 scenario3 <- scenario
 scenario3$catch$e_years <- seq(1,2,length.out=10)
-scen3 <- scallop_model_fun(scenario4)
+scen3 <- scallop_model_fun(scenario3)
 with(scen3$results,{
         par(mfrow=c(3,1), mar=c(3,5,1,1), las=1, mgp=c(4,1,0))
         plot(time, VB, type="l", col="blue", 
@@ -80,7 +80,7 @@ with(scen3$results,{
 # rolling bag limit - decrease
 scenario4 <- scenario
 scenario4$catch$bag <- c(2,2,2,2,2,2,2,1,1,1,1,1)
-scen4 <- scallop_model_fun(scenario5)
+scen4 <- scallop_model_fun(scenario4)
 with(scen4$results,{
         par(mfrow=c(3,1), mar=c(3,5,1,1), las=1, mgp=c(4,1,0))
         plot(time, VB, type="l", col="blue", 
@@ -96,7 +96,7 @@ with(scen4$results,{
 # season start
 scenario5 <- scenario
 scenario5$catch$season <- c(0,0,0,0,0,0,0,1,1,1,0,0)
-scen5 <- scallop_model_fun(scenario6)
+scen5 <- scallop_model_fun(scenario5)
 with(scen5$results,{
         par(mfrow=c(3,1), mar=c(3,5,1,1), las=1, mgp=c(4,1,0))
         plot(time, VB, type="l", col="blue", 
@@ -113,7 +113,7 @@ with(scen5$results,{
 scenario6 <- scenario
 scenario6$catch$bag <- c(2,2,2,2,2,2,2,1,1,1,1,1)
 scenario6$catch$season <- c(0,0,0,0,0,0,0,1,1,1,0,0)
-scen6 <- scallop_model_fun(scenario7)
+scen6 <- scallop_model_fun(scenario6)
 with(scen6$results,{
         par(mfrow=c(3,1), mar=c(3,5,1,1), las=1, mgp=c(4,1,0))
         plot(time, VB, type="l", col="blue", 
