@@ -36,7 +36,7 @@ scenario <- list(
                                 U = 0.6,
                                 qmax = .0005,
                                 bag_unit = "gallon", #gallon or numbers
-                                bag = c(2,2,2,2,2,2,3,2,1,2,2,2), # rep(2,12) for constant
+                                bag = rep(2,12), # rep(2,12) for constant
                                 season = c(0,0,0,0,0,0,1,1,1,0,0,0),#rep(1,12) for open
                                 e_years = seq(1,1,length.out=10) #rep(1,10) for constant
                                 ), 
@@ -201,7 +201,7 @@ scallop_model_fun <- function(scenario){
           if(scenario$catch$q_flag == "constant"){
             qt[i] <- scenario$catch$q #Here fixing q at a constant
           }else if(scenario$catch$q_flag=='VB'){
-            qt[i] <- scenario$catch$qmax/(1+scenario$catch$kq*B[i])
+            qt[i] <- scenario$catch$qmax/(1+scenario$per.rec$kq*B[i-1])
           }
           et[i] <- scenario$catch$effort[timer[i]] * scenario$catch$e_years[yr.timer[i]] * scenario$catch$season[timer[i]] #Here fixing effort at a constant
           #swith for fishing mortality
@@ -269,19 +269,19 @@ scallop_model_fun <- function(scenario){
 ###-----------------------------------------------------
 #    Run
 ###-----------------------------------------------------
-  run1 <- scallop_model_fun(scenario)
+  # run1 <- scallop_model_fun(scenario)
 
-  #Simple plot of VB, effort
-    with(run1$results,{
-        par(mfrow=c(3,1), mar=c(3,5,1,1), las=1, mgp=c(4,1,0))
-        plot(time, VB, type="l", col="blue", 
-             lwd=3, ylim=c(0, max(VB)))
-        abline(lm(VB~time), lwd=2, lty=3)
-        et2 <- et
-        et2[et2==0] <- NA
-        plot(time, et2, col="red", lwd=3, type='l', 
-             ylim=c(0,max(et2,na.rm=T)), ylab="Effort")
-        plot(time, recruits, type='l')
-    })
+  # #Simple plot of VB, effort
+  #   with(run1$results,{
+  #       par(mfrow=c(3,1), mar=c(3,5,1,1), las=1, mgp=c(4,1,0))
+  #       plot(time, VB, type="l", col="blue", 
+  #            lwd=3, ylim=c(0, max(VB)))
+  #       abline(lm(VB~time), lwd=2, lty=3)
+  #       et2 <- et
+  #       et2[et2==0] <- NA
+  #       plot(time, et2, col="red", lwd=3, type='l', 
+  #            ylim=c(0,max(et2,na.rm=T)), ylab="Effort")
+  #       plot(time, recruits, type='l')
+  #   })
     
 
