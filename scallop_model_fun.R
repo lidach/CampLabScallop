@@ -12,7 +12,7 @@
 
 scenario <- list( 
                  life = list(amax = 18,
-                            Ro = 1000,
+                            Ro = 1e6,
                             CR = 8,
                             vbk = 4/12,
                             vblinf = 65,
@@ -31,14 +31,14 @@ scenario <- list(
                                            0.3,0.5,1,1,1,1)),
                   catch = list(FM_flag = "q", #q or constant
                                q_flag = "constant", #constant or VB
-                                effort = c(0,0,0,0,0,0,250,150,100,0,0,0), #rep(1000,12) for constant
+                                effort = c(0,0,0,0,0,0,11415,6929,4255,0,0,0), #rep(1000,12) for constant
                                 q = 0.003,
                                 U = 0.6,
                                 qmax = .0005,
                                 bag_unit = "gallon", #gallon or numbers
                                 bag = c(2,2,2,2,2,2,3,2,1,2,2,2), # rep(2,12) for constant
                                 season = c(0,0,0,0,0,0,1,1,1,0,0,0),#rep(1,12) for open
-                                e_years = seq(1,30,length.out=10) #rep(1,10) for constant
+                                e_years = seq(1,1,length.out=10) #rep(1,10) for constant
                                 ), 
                   sim = list(month = 120)
                   )
