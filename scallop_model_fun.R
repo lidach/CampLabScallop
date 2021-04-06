@@ -119,7 +119,7 @@ scallop_model_fun <- function(scenario){
     months <- scenario$sim$month
   #storage
     eggs <- N <- B <- VB <- hr <- yield_n <- yield_b <- cpue_n <- cpue_b <- qt <- et <- hcpue <- hpue <- pr_hr <- vector(length=months)
-    hr_sel <- hr_harv <- nage <- matrix(0, months, amax)
+    hr_harv <- nage <- matrix(0, months, amax)
   #initialization
     #numbers
       nage[1,1] <- scenario$life$Ro                                               #initializing first year age structure
@@ -137,10 +137,8 @@ scallop_model_fun <- function(scenario){
       }
       et[1] <- scenario$catch$effort[1] * scenario$catch$e_years[1] #Effort in the first month
       # hr[1] <- 1-exp(-qt[1]*et[1])
-      hr_sel[1,] <- 1-exp(-qt[1]*et[1]*scenario$life.vec$Vul)                                                             #Harvest rate calc, turning continuous F into a discrete harvest rate
-      # hr_sel[1,] <- hr[1]*scenario$life.vec$Vul                                                #age-specific capture rate according to selectivity
-      ## should p.legal be within exp() or not?
-      hr_harv[1,] <-  hr_sel[1,]*scenario$catch$p.legal                       #age-specific capture of legally big animals (adjusting hr_sel for size limit)
+      hr_harv[1,] <- 1-exp(-qt[1]*et[1]*scenario$life.vec$Vul)                                                             #Harvest rate calc, turning continuous F into a discrete harvest rate
+     
       if(scenario$catch$bag_unit=="gallon"){
         require(truncnorm)
         #converts to gallons of scallops in the environment
@@ -192,10 +190,8 @@ scallop_model_fun <- function(scenario){
           }
           et[i] <- scenario$catch$effort[timer[i]] * scenario$catch$e_years[yr.timer[i]] #Calculation of Effort
           # hr[i] <- 1-exp(-qt[i]*et[i])
-          # hr_sel[i,] <- hr[i]*scenario$life.vec$Vul
-          hr_sel[i,] <- 1-exp(-qt[i]*et[i]*scenario$life.vec$Vul)
-          # hr_harv[i,] <- hr[i]*scenario$life.vec$Vul*scenario$catch$p.legal
-          hr_harv[i,] <- hr_sel[i,]*scenario$catch$p.legal
+          hr_harv[i,] <- 1-exp(-qt[i]*et[i]*scenario$life.vec$Vul)
+         
           if(scenario$catch$bag_unit=="gallon"){
             #using a half-normal truncated at zero to get the density of 
             hcpue[i] <- sum((nage[i,]/sh2gal(scenario$life.vec$TL))*hr_harv[i,])/et[i] #expected catch rate of harvestable fish
@@ -243,10 +239,8 @@ scallop_model_fun <- function(scenario){
                                       hcpue = hcpue,
                                       hpue = hpue,
                                       hr = hr,
-                                      pr_hr = pr_hr,
-                                      hr_harv = rowMeans(pr_hr*hr_harv)), # mean harvest rate per month
+                                      pr_hr = pr_hr)
                   matrix = list(nage = nage,
-                                hr_sel = hr_sel,
                                 hr_harv = hr_harv))
     return(ret.l)
 }
