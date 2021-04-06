@@ -9,7 +9,7 @@
 
 
 scenario <- list( 
-                 life = list(amax = 18,              #maximum age in the model, this is not a plus group (we just kill all scallops after this month) <- I think 
+                 life = list(amax = 18,              #maximum age in the model, this is not a plus group (we just kill all scallops after this month)
                             Ro = 1e6,                #Unfished Recruitment, set at 1 million 
                             CR = 8,                  #Compensation Ratio, Arbitrarily set
                             vbk = 4/12,              #Von-Bertalanffy K
@@ -24,14 +24,13 @@ scenario <- list(
                             vsd = 5,                 #Vulnerability sd, for logistic form
                             M = 0.2,                 #Natural Mortality
                             lorenzc = 1,             #Lorenzen exponent for Lorenzen M
-                            #Probability of Scallop Spawning at a given age
-                            prob_spawn = c(0,0,0,0,0,0.1,            
-                                           0.2,0.5,0.8,0.8,0.2,0.1,  
-                                           0.3,0.5,1,1,1,1)),
+                            #Probability of Scallop Spawning across any age
+                            prob_spawn = c(0.2,0.2,0.3,0.3,0.2,0.1,            
+                                           0.2,0.5,0.8,0.8,0.2,0.1)),
                   catch = list( q_flag = "constant",  #Catchability Option______constant or VB
                                #Effort in each month; merges season open/close
-                                effort = c(0,0,0,0,0,0,11415,6929,4255,0,0,0), 
-                                q = 0.0000319,   #Catchability 
+                                effort = c(0,0,0,0,0,0,11415,6929,4255,0,0,0)*3.8, # vessels, need to multiply by 3.8 to get persons
+                                q = 0.0000319/3.8,   #Catchability, Granneman paper - value is per vessel so divide by 3.8 to get persons 
                                 qmax = .0005,  #Max Catchability (for q varying with VB)
                                 bag_unit = "gallon",   #Bag limit Units_____gallon or numbers
                                 bag = rep(2,12), #Bag limit________rep(2,12) for constant
@@ -50,20 +49,20 @@ scallop_model_fun <- function(scenario){
         life.vec$Wt <- (alw*(life.vec$TL)^alwb)                     #Weight of Scallops WL function
         life.vec$Vul <- 1/(1+exp(-(life.vec$TL-vlh)/vsd))           #Vulnerability of Scallops to harvest, logistic function 
         life.vec$Surv <- exp(-(M*TLref/life.vec$TL))^lorenzc        #Survival of scallops at age (based on Lorenzen M)
-        life.vec$Lo <- life.vec$Lfished <- vector(length=amax)      #Need comments for this to line 59 on what is exactly being done, looks like survivorship
+        life.vec$Lo <- life.vec$Lfished <- vector(length=amax)      #Survivorship vectors
         life.vec$Lo[1] <- life.vec$Lfished[1] <- 1                  #Survivorship vector start
         mean.eff <- rowMeans(sapply(scenario$catch$e_years, function(x) x*scenario$catch$effort)) #mean effort across years
         life.vec$pseudo.eff <- c(mean.eff, mean.eff[1:6]) #mean effort by age-month
         for (i in 2:amax){
           life.vec$Lo[i] <- life.vec$Lo[i-1]*life.vec$Surv[i-1]     #Survivorship vector calcs
-#          life.vec$Lfished[i] <- life.vec$Lfished[i-1]*life.vec$Surv[i-1]*(1-(1-exp(-life.vec$pseudo.eff[i-1]*scenario$catch$q))*life.vec$Vul[i-1])  #Survivorship fished, note it doesnt contain bag limit stuff (Why is Vul outside of F calc?)
           life.vec$Lfished[i] <- life.vec$Lfished[i-1]*exp(-1*(-log(life.vec$Surv[i-1]) + (life.vec$pseudo.eff[i-1]*scenario$catch$q*life.vec$Vul[i-1]))) #Survivorship fished, Continuous
         }
         life.vec$Mat <- 1/(1+exp(-(life.vec$Age-amat)/msd))         #Maturity at month, based on logistic
         life.vec$Fec <- .1*life.vec$Wt                              #Fecundity, scalar of weight at month
         life.vec$prob_spawn <- 0                                    #Starting probability of spawn vector
+        # normalization necessary to only scallop to spawn once, second year - iteroparity
         life.vec$prob_spawn[1:12] <- prob_spawn[1:12]/sum(prob_spawn[1:12])      #normalizing first year of prob spawn
-        life.vec$prob_spawn[13:18] <- prob_spawn[13:18]/sum(prob_spawn[13:18])   #normalizing second year of prob spawn
+        life.vec$prob_spawn[13:18] <- prob_spawn[1:6]/sum(prob_spawn[1:6])   #normalizing second year of prob spawn
         return(life.vec)
     })
   #bag limit 
@@ -112,7 +111,6 @@ scallop_model_fun <- function(scenario){
       recruit$bhb_spawn <- (scenario$life$CR-1)/(scenario$life$Ro*epro_spawn)              #beverton holt b param, with prob_spawn
       recruit$r.eq <- (recruit$bha*eprf-1)/(recruit$bhb*eprf)                              #equilibrium recruitment
       recruit$r.eq_spawn <- (recruit$bha_spawn*eprf_spawn-1)/(recruit$bhb_spawn*eprf_spawn)#equilibrium recruitment, with prob_spawn
-#      recruit$yield.eq <- scenario$catch$U*vbprf*recruit$r.eq       #Harvest rate * vulbio per recruit fished * rec at equilibrium      <- is this obsolete without FM_flag??
       recruit$yield.eq <- (1-exp(-1*(scenario$life.vec$pseudo.eff*scenario$catch$q))) * vbprf * recruit$r.eq       #Harvest rate * vulbio per recruit fished * rec at equilibrium
       return(recruit)
     })
@@ -121,7 +119,7 @@ scallop_model_fun <- function(scenario){
     months <- scenario$sim$month
   #storage
     eggs <- N <- B <- VB <- hr <- yield_n <- yield_b <- cpue_n <- cpue_b <- qt <- et <- hcpue <- hpue <- pr_hr <- vector(length=months)
-    hr_sel <- hr_harv <- nage <- matrix(0, months, amax)
+    hr_harv <- nage <- matrix(0, months, amax)
   #initialization
     #numbers
       nage[1,1] <- scenario$life$Ro                                               #initializing first year age structure
@@ -138,9 +136,9 @@ scallop_model_fun <- function(scenario){
         qt[1] <- scenario$catch$qmax/(1+scenario$per.rec$kq*B[1])                              #Q as a function of Vulnerable Biomass
       }
       et[1] <- scenario$catch$effort[1] * scenario$catch$e_years[1] #Effort in the first month
-      hr[1] <- 1-exp(-qt[1]*et[1])                                                             #Harvest rate calc, turning continuous F into a discrete harvest rate
-      hr_sel[1,] <- hr[1]*scenario$life.vec$Vul                                                #age-specific capture rate according to selectivity
-      hr_harv[1,] <-  hr[1]*scenario$life.vec$Vul*scenario$catch$p.legal                       #age-specific capture of legally big animals (adjusting hr_sel for size limit)
+      # hr[1] <- 1-exp(-qt[1]*et[1])
+      hr_harv[1,] <- 1-exp(-qt[1]*et[1]*scenario$life.vec$Vul)                                                             #Harvest rate calc, turning continuous F into a discrete harvest rate
+     
       if(scenario$catch$bag_unit=="gallon"){
         require(truncnorm)
         #converts to gallons of scallops in the environment
@@ -171,7 +169,6 @@ scallop_model_fun <- function(scenario){
   #simulate
     for(i in 2:months){
         #check if alive
-
         #recruitment
           # nage[i,1] <- 0              #Recruitment without process error
           if((i %% 12)==1){
@@ -182,7 +179,7 @@ scallop_model_fun <- function(scenario){
           }
         #Applying Natural mortality for catch rate calcs
           nage[i,2:amax] <- nage[i-1,1:(amax-1)]*scenario$life.vec$Surv[1:(amax-1)]                                               #Note that we dont have a plus group calc as we're killing all after month 18
-          #OK so I assume the above is needed to get catch rates and eventually F before doing the actual mortality calc (including F & M), which will overwrite above
+          #The above is needed to get catch rates and eventually F before doing the actual mortality calc (including F & M), which will overwrite above
           
         #Bag limit
           #switch for catchability
@@ -192,9 +189,9 @@ scallop_model_fun <- function(scenario){
             qt[i] <- scenario$catch$qmax/(1+scenario$per.rec$kq*B[i-1])                                                    #q as a function of vul bio
           }
           et[i] <- scenario$catch$effort[timer[i]] * scenario$catch$e_years[yr.timer[i]] #Calculation of Effort
-          hr[i] <- 1-exp(-qt[i]*et[i])
-          hr_sel[i,] <- hr[i]*scenario$life.vec$Vul
-          hr_harv[i,] <- hr[i]*scenario$life.vec$Vul*scenario$catch$p.legal
+          # hr[i] <- 1-exp(-qt[i]*et[i])
+          hr_harv[i,] <- 1-exp(-qt[i]*et[i]*scenario$life.vec$Vul)
+         
           if(scenario$catch$bag_unit=="gallon"){
             #using a half-normal truncated at zero to get the density of 
             hcpue[i] <- sum((nage[i,]/sh2gal(scenario$life.vec$TL))*hr_harv[i,])/et[i] #expected catch rate of harvestable fish
@@ -224,6 +221,7 @@ scallop_model_fun <- function(scenario){
       cpue_n <- yield_n/et                                                      #cpue in numbers, yield/effort
       cpue_b <- yield_b/et                                                      #cpue in bimoass, yield/effort
       recruits <- nage[,1]                                                      #The recruits at each time step
+      hr <- yield_n/N                                                           #Scallop harvest rate per month
   #return
     ret.l <- list(scenario = scenario,
                   results=data.frame(time = 1:scenario$sim$month,
@@ -241,9 +239,8 @@ scallop_model_fun <- function(scenario){
                                       hcpue = hcpue,
                                       hpue = hpue,
                                       hr = hr,
-                                      pr_hr = pr_hr),
+                                      pr_hr = pr_hr)
                   matrix = list(nage = nage,
-                                hr_sel = hr_sel,
                                 hr_harv = hr_harv))
     return(ret.l)
 }
