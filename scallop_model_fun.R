@@ -24,16 +24,17 @@ scenario <- list(
                             vsd = 5,                 #Vulnerability sd, for logistic form
                             M = 0.2,                 #Natural Mortality
                             lorenzc = 1,             #Lorenzen exponent for Lorenzen M
-                            prob_spawn = c(0,0,0,0,0,0.1,            #Probability of Spawning in a given month (over the course of an indv scallops lifetime)
-                                           0.2,0.5,0.8,0.8,0.2,0.1,  #Probability of Scallop Spawning at a given age
+                            #Probability of Scallop Spawning at a given age
+                            prob_spawn = c(0,0,0,0,0,0.1,            
+                                           0.2,0.5,0.8,0.8,0.2,0.1,  
                                            0.3,0.5,1,1,1,1)),
-                  catch = list( q_flag = "constant",                           #Catchability Option______constant or VB
-                                effort = c(0,0,0,0,0,0,11415,6929,4255,0,0,0), #Effort in each month__________rep(1000,12) for constant
-                                q = 0.0000319,                                 #Catchability 
-                                qmax = .0005,                                  #Max Catchability (for q varying with VB)
-                                bag_unit = "gallon",                           #Bag limit Units_____gallon or numbers
-                                bag = rep(2,12),                               #Bag limit________rep(2,12) for constant          
-                                season = c(0,0,0,0,0,0,1,1,1,0,0,0),           #Season Dates (1 if month is in season)_____________rep(1,12) for open all year
+                  catch = list( q_flag = "constant",  #Catchability Option______constant or VB
+                               #Effort in each month; merges season open/close
+                                effort = c(0,0,0,0,0,0,11415,6929,4255,0,0,0), 
+                                q = 0.0000319,   #Catchability 
+                                qmax = .0005,  #Max Catchability (for q varying with VB)
+                                bag_unit = "gallon",   #Bag limit Units_____gallon or numbers
+                                bag = rep(2,12), #Bag limit________rep(2,12) for constant
                                 e_years = seq(1,1,length.out=10)               #Effort over years_________rep(1,10) for constant
                                 ), 
                   sim = list(month = 120)                                      #Simulation length, number of months
@@ -51,7 +52,8 @@ scallop_model_fun <- function(scenario){
         life.vec$Surv <- exp(-(M*TLref/life.vec$TL))^lorenzc        #Survival of scallops at age (based on Lorenzen M)
         life.vec$Lo <- life.vec$Lfished <- vector(length=amax)      #Need comments for this to line 59 on what is exactly being done, looks like survivorship
         life.vec$Lo[1] <- life.vec$Lfished[1] <- 1                  #Survivorship vector start
-        life.vec$pseudo.eff <- c(rowMeans(sapply(scenario$catch$e_years, function(x) x*scenario$catch$season*scenario$catch$effort)),rowMeans(sapply(scenario$catch$e_years, function(x) x*scenario$catch$season*scenario$catch$effort))[1:6])                  #Getting effort in months and years..? Hmm but if we switch the season then the total effort will change (i.e. monthly effort doesnt shift into season dates)
+        mean.eff <- rowMeans(sapply(scenario$catch$e_years, function(x) x*scenario$catch$effort)) #mean effort across years
+        life.vec$pseudo.eff <- c(mean.eff, mean.eff[1:6]) #mean effort by age-month
         for (i in 2:amax){
           life.vec$Lo[i] <- life.vec$Lo[i-1]*life.vec$Surv[i-1]     #Survivorship vector calcs
 #          life.vec$Lfished[i] <- life.vec$Lfished[i-1]*life.vec$Surv[i-1]*(1-(1-exp(-life.vec$pseudo.eff[i-1]*scenario$catch$q))*life.vec$Vul[i-1])  #Survivorship fished, note it doesnt contain bag limit stuff (Why is Vul outside of F calc?)
@@ -135,23 +137,26 @@ scallop_model_fun <- function(scenario){
       }else if(scenario$catch$q_flag=='VB'){
         qt[1] <- scenario$catch$qmax/(1+scenario$per.rec$kq*B[1])                              #Q as a function of Vulnerable Biomass
       }
-      et[1] <- scenario$catch$effort[1] * scenario$catch$e_years[1] * scenario$catch$season[1] #Effort in the first month
+      et[1] <- scenario$catch$effort[1] * scenario$catch$e_years[1] #Effort in the first month
       hr[1] <- 1-exp(-qt[1]*et[1])                                                             #Harvest rate calc, turning continuous F into a discrete harvest rate
       hr_sel[1,] <- hr[1]*scenario$life.vec$Vul                                                #age-specific capture rate according to selectivity
       hr_harv[1,] <-  hr[1]*scenario$life.vec$Vul*scenario$catch$p.legal                       #age-specific capture of legally big animals (adjusting hr_sel for size limit)
-      hcpue[1] <- sum(nage[1,]*hr_harv[1,])/et[1]                                              #raw catch rates not accounting for bag *also not accounting for loss due to.
-      hcpue[1] <- ifelse(is.nan(hcpue[1]),0,hcpue[1])                                          #trap for cases where effort <- 0, will throw div0 errors (NaN)
       if(scenario$catch$bag_unit=="gallon"){
         require(truncnorm)
-        #using a half-normal truncated at zero to get the density of ...
-        dens.catch <- dtruncnorm(scenario$catch$catch.rate[[1]], a=0, mean=hcpue[1], sd=hcpue[1]*0.4) #
-        dens.catch <- dens.catch/sum(dens.catch)                                                      #need to sum to 1 to prevent loss from density range
-        hpue[1] <- sum(dens.catch*scenario$catch$ret[[1]])                                            #rate of actually harvestable scallops accounting for bag and size
-      }else{
+        #converts to gallons of scallops in the environment
+        hcpue[1] <- sum((nage[1,]/sh2gal(scenario$life.vec$TL))*hr_harv[1,])/et[1] #raw catch rates not accounting for bag *also not accounting for loss due to So
+        hcpue[1] <- ifelse(is.nan(hcpue[1]),0,hcpue[1])  #trap for cases where effort <- 0, will throw div0 errors (NaN)
+        #using a half-normal truncated at zero to get the density of 
+        dens.catch <- dtruncnorm(scenario$catch$catch.rate[[1]], a=0, mean=hcpue[1], sd=hcpue[1]*0.4)
+        dens.catch <- dens.catch/sum(dens.catch) #need to sum to 1 to prevent loss from density range
+        hpue[1] <- sum(dens.catch*scenario$catch$ret[[1]])  #rate of actually harvestable fish accounting for bag and size
+    }else{
+        hcpue[1] <- sum(nage[1,]*hr_harv[1,])/et[1] #raw catch rates not accounting for bag *also not accounting for loss due to So
+        hcpue[1] <- ifelse(is.nan(hcpue[1]),0,hcpue[1])  #trap for cases where effort <- 0, will throw div0 errors (NaN)
         dens.catch <- dpois(scenario$catch$catch.rate[[1]],hcpue[1])
-        dens.catch <- dens.catch/sum(dens.catch)                                                      #need to sum to 1 to prevent loss from density range
-        hpue[1] <- sum(dens.catch*scenario$catch$ret[[1]])                                            #rate of actually harvestable scallop accounting for bag and size
-      }
+        dens.catch <- dens.catch/sum(dens.catch) #need to sum to 1 to prevent loss from density range
+        hpue[1] <- sum(dens.catch*scenario$catch$ret[[1]])  #rate of actually harvestable fish accounting for bag and size
+    }
       
       pr_hr[1] <- (hpue[1]/hcpue[1])                                             #probability of actually harvesting scallop of legal size
       pr_hr[1] <- ifelse(is.nan(pr_hr[1]),0,pr_hr[1])                            #Another trap, becuase hcpue could be 0
@@ -186,22 +191,24 @@ scallop_model_fun <- function(scenario){
           }else if(scenario$catch$q_flag=='VB'){
             qt[i] <- scenario$catch$qmax/(1+scenario$per.rec$kq*B[i-1])                                                    #q as a function of vul bio
           }
-          et[i] <- scenario$catch$effort[timer[i]] * scenario$catch$e_years[yr.timer[i]] * scenario$catch$season[timer[i]] #Calculation of Effort
+          et[i] <- scenario$catch$effort[timer[i]] * scenario$catch$e_years[yr.timer[i]] #Calculation of Effort
           hr[i] <- 1-exp(-qt[i]*et[i])
           hr_sel[i,] <- hr[i]*scenario$life.vec$Vul
           hr_harv[i,] <- hr[i]*scenario$life.vec$Vul*scenario$catch$p.legal
-          hcpue[i] <- sum(nage[i,]*hr_harv[i,])/et[i]                                                                      #expected catch rate of harvestable fish
-          hcpue[i] <- ifelse(is.nan(hcpue[i]),0,hcpue[i])                                                                  #div0 trap for effort = 0
           if(scenario$catch$bag_unit=="gallon"){
             #using a half-normal truncated at zero to get the density of 
+            hcpue[i] <- sum((nage[i,]/sh2gal(scenario$life.vec$TL))*hr_harv[i,])/et[i] #expected catch rate of harvestable fish
+            hcpue[i] <- ifelse(is.nan(hcpue[i]),0,hcpue[i])  #div0 trap for effort = 0
             dens.catch <- dtruncnorm(scenario$catch$catch.rate[[timer[i]]], a=0, mean=hcpue[i], sd=hcpue[i]*0.4)
-            dens.catch <- dens.catch/sum(dens.catch)                                                                       #need to sum to 1 to prevent loss from density range
-            hpue[i] <- sum(dens.catch*scenario$catch$ret[[timer[i]]])                                                      #rate of actually harvestable fish accounting for bag and size
-          }else{
+            dens.catch <- dens.catch/sum(dens.catch) #need to sum to 1 to prevent loss from density range
+            hpue[i] <- sum(dens.catch*scenario$catch$ret[[timer[i]]])  #rate of actually harvestable fish accounting for bag and size
+        }else{
+            hcpue[i] <- sum(nage[i,]*hr_harv[i,])/et[i] #expected catch rate of harvestable fish
+            hcpue[i] <- ifelse(is.nan(hcpue[i]),0,hcpue[i])  #div0 trap for effort = 0
             dens.catch <- dpois(scenario$catch$catch.rate[[timer[i]]],hcpue[i])
-            dens.catch <- dens.catch/sum(dens.catch)                                                                       #need to sum to 1 to prevent loss from density range
-            hpue[i] <- sum(dens.catch*scenario$catch$ret[[timer[i]]])                                                      #rate of actually harvestable fish accounting for bag and size
-          }
+            dens.catch <- dens.catch/sum(dens.catch) #need to sum to 1 to prevent loss from density range
+            hpue[i] <- sum(dens.catch*scenario$catch$ret[[timer[i]]])  #rate of actually harvestable fish accounting for bag and size
+        }
           pr_hr[i] <- pmax(0,pmin((hpue[i]/hcpue[i]),1))                                                                   #probabilty of actually harvesting (i.e. landing)
           pr_hr[i] <- ifelse(is.nan(pr_hr[i]),0,pr_hr[i])                                                                  #trap for effort =0...meaning hcpue=0
         #Mortality
