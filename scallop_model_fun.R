@@ -26,7 +26,8 @@ scenario <- list(
                             lorenzc = 1,             #Lorenzen exponent for Lorenzen M
                             #Probability of Scallop Spawning across any age
                             prob_spawn = c(0.2,0.2,0.3,0.3,0.2,0.1,            
-                                           0.2,0.5,0.8,0.8,0.2,0.1)),
+                                           0.2,0.5,0.8,0.8,0.2,0.1),
+                            semelparous=FALSE),
                   catch = list( q_flag = "constant",  #Catchability Option______constant or VB
                                #Effort in each month; merges season open/close
                                 effort = c(0,0,0,0,0,0,11415,6929,4255,0,0,0)*3.8, # vessels, need to multiply by 3.8 to get persons
@@ -59,10 +60,13 @@ scallop_model_fun <- function(scenario){
         }
         life.vec$Mat <- 1/(1+exp(-(life.vec$Age-amat)/msd))         #Maturity at month, based on logistic
         life.vec$Fec <- .1*life.vec$Wt                              #Fecundity, scalar of weight at month
-        life.vec$prob_spawn <- 0                                    #Starting probability of spawn vector
+        life.vec$prob_spawn <- rep(0,amax)                          #Starting probability of spawn vector
         # normalization necessary to only scallop to spawn once, second year - iteroparity
         life.vec$prob_spawn[1:12] <- prob_spawn[1:12]/sum(prob_spawn[1:12])      #normalizing first year of prob spawn
-        life.vec$prob_spawn[13:18] <- prob_spawn[1:6]/sum(prob_spawn[1:6])   #normalizing second year of prob spawn
+        if(!semelparous){
+          life.vec$prob_spawn[13:18] <- prob_spawn[1:6]/sum(prob_spawn[1:6])
+        }
+           #normalizing second year of prob spawn
         return(life.vec)
     })
   #bag limit 
