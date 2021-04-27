@@ -10,7 +10,7 @@
 
 scenario <- list( 
                  life = list(amax = 18,              #maximum age in the model, this is not a plus group (we just kill all scallops after this month)
-                            Ro = 1e7,                #Unfished Recruitment, set at 1 million 
+                            Ro = 1e7,                #Unfished Recruitment, set at 10 million 
                             CR = 8,                  #Compensation Ratio, Arbitrarily set
                             vbk = 4/12,              #Von-Bertalanffy K
                             vblinf = 65,             #Von-Bertalanffy L-infinity 
@@ -30,8 +30,10 @@ scenario <- list(
                             semelparous=FALSE),
                   catch = list( q_flag = "constant",  #Catchability Option______constant or VB
                                #Effort in each month; merges season open/close
-                                effort = c(0,0,0,0,0,0,11415,6929,4255,0,0,0)*3.8, # vessels, need to multiply by 3.8 to get persons
-                                q = 0.000319/3.8,   #Catchability, Granneman paper - value is per vessel so divide by 3.8 to get persons 
+                                emax  = sum(c(11415,6929,4255))*3.8, # maximum number vessels, need to multiply by 3.8 to get persons
+                                e_cap = FALSE, #this is a switch to cap effort @ emax or to allow it to scale following the observed effort decline from Granneman paper
+                                eff_open = c(0,0,0,0,0,0,1,1,1,0,0,0), #this is a vector of months that tells the model where to apply the effort. The effort does not need to be sequential as the eff_spread function will allocate the effort in each month
+                                q = 0.000319/3.8,   #Catchability, Granneman paper - value is per vessel so divide by 3.8 to get persons (off by one-order of magnitude for scaling)
                                 qmax = .0005,  #Max Catchability (for q varying with VB)
                                 bag_unit = "gallon",   #Bag limit Units_____gallon or numbers
                                 bag = rep(2,12), #Bag limit________rep(2,12) for constant
@@ -39,9 +41,26 @@ scenario <- list(
                                 ), 
                   sim = list(month = 120)                                      #Simulation length, number of months
                   )
+sh2gal <- function(sh){
+  (-6.704*sh + 480.96)/2
+}
+eff_spread <- function(emax, eff_open, e_cap){
+  coef <- coef(lm(log(c(11415,6929,4255)*3.8)~seq(1,3))) #fit exponential decay model to effort decline
+  pred <- exp(coef[1] + seq(1,sum(eff_open))*coef[2]) # predict for months open
+  effort <- eff_open # copy 
+  effort[eff_open==1] <- pred #fill in the predicted effort (in person-trips) for each month open
 
+  if(e_cap){
+    effort <- (effort/sum(effort))*emax #scale the effort to the maximum effort
+  }
+
+  return(effort)
+}
 scallop_model_fun <- function(scenario){
   
+  #need to set the effort vector first for subsequent calculations
+  scenario$catch$effort <- eff_spread(scenario$catch$emax, scenario$catch$eff_open, scenario$catch$e_cap)
+
   TLref <- scenario$life$vblinf*0.5                               #Reference Length for Lorenzen M, (calculate from life values)
   #Life history vectors
     scenario$life.vec <- with(scenario$life,{
@@ -71,9 +90,7 @@ scallop_model_fun <- function(scenario){
     })
   #bag limit 
     #Number of scallops in a gallon as a function of shell height (Geiger et al., 2006; Granneman et al., in-review)
-    sh2gal <- function(sh){
-      (-6.704*sh + 480.96)/2
-    }
+    
     #switch for bag limit units
     scenario$catch <- within(scenario$catch,{
       if(bag_unit=='gallon'){
