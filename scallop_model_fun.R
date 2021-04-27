@@ -33,27 +33,27 @@ scenario <- list(
                                 E_max  = sum(c(11415,6929,4255))*3.8, # maximum number vessels, need to multiply by 3.8 to get persons
                                 E_cap = FALSE, # this is a switch to cap effort @ emax or to allow it to scale following the observed effort decline from Granneman paper
                                 E_con = FALSE, # this is a switch for constant effort
-                                eff_open = c(0,0,0,0,0,0,1,1,1,0,0,0), #this is a vector of months that tells the model where to apply the effort. The effort does not need to be sequential as the eff_spread function will allocate the effort in each month
+                                E_open = c(0,0,0,0,0,0,1,1,1,0,0,0), #this is a vector of months that tells the model where to apply the effort. The effort does not need to be sequential as the eff_spread function will allocate the effort in each month
                                 q = 0.000319/3.8,   #Catchability, Granneman paper - value is per vessel so divide by 3.8 to get persons (off by one-order of magnitude for scaling)
                                 qmax = .0005,  #Max Catchability (for q varying with VB)
                                 bag_unit = "gallon",   #Bag limit Units_____gallon or numbers
                                 bag = rep(2,12), #Bag limit________rep(2,12) for constant
-                                e_years = seq(1,1,length.out=10)               #Effort over years_________rep(1,10) for constant
+                                E_years = seq(1,1,length.out=10)               #Effort over years_________rep(1,10) for constant
                                 ), 
                   sim = list(month = 120)                                      #Simulation length, number of months
                   )
 sh2gal <- function(sh){
   (-6.704*sh + 480.96)/2
 }
-eff_spread <- function(E_max, eff_open, E_cap, E_con){
+eff_spread <- function(E_max, E_open, E_cap, E_con){
   if(E_con){
-    effort <- eff_open
-    effort[eff_open==1] <- E_max/sum(eff_open)
+    effort <- E_open
+    effort[E_open==1] <- E_max/sum(E_open)
   }else{
     coef <- coef(lm(log(c(11415,6929,4255)*3.8)~seq(1,3))) #fit exponential decay model to effort decline
-    pred <- exp(coef[1] + seq(1,sum(eff_open))*coef[2]) # predict for months open
-    effort <- eff_open # copy 
-    effort[eff_open==1] <- pred #fill in the predicted effort (in person-trips) for each month open
+    pred <- exp(coef[1] + seq(1,sum(E_open))*coef[2]) # predict for months open
+    effort <- E_open # copy 
+    effort[E_open==1] <- pred #fill in the predicted effort (in person-trips) for each month open
 
     if(E_cap){
       effort <- (effort/sum(effort))*E_max #scale the effort to the maximum effort
@@ -64,7 +64,7 @@ eff_spread <- function(E_max, eff_open, E_cap, E_con){
 scallop_model_fun <- function(scenario){
   
   #need to set the effort vector first for subsequent calculations
-  scenario$catch$effort <- eff_spread(scenario$catch$E_max, scenario$catch$eff_open, scenario$catch$E_cap, scenario$catch$E_con)
+  scenario$catch$effort <- eff_spread(scenario$catch$E_max, scenario$catch$E_open, scenario$catch$E_cap, scenario$catch$E_con)
 
   TLref <- scenario$life$vblinf*0.5                               #Reference Length for Lorenzen M, (calculate from life values)
   #Life history vectors
@@ -76,7 +76,7 @@ scallop_model_fun <- function(scenario){
         life.vec$Surv <- exp(-(M*TLref/life.vec$TL))^lorenzc        #Survival of scallops at age (based on Lorenzen M)
         life.vec$Lo <- life.vec$Lfished <- vector(length=amax)      #Survivorship vectors
         life.vec$Lo[1] <- life.vec$Lfished[1] <- 1                  #Survivorship vector start
-        mean.eff <- rowMeans(sapply(scenario$catch$e_years, function(x) x*scenario$catch$effort)) #mean effort across years
+        mean.eff <- rowMeans(sapply(scenario$catch$E_years, function(x) x*scenario$catch$effort)) #mean effort across years
         life.vec$pseudo.eff <- c(mean.eff, mean.eff[1:6]) #mean effort by age-month
         for (i in 2:amax){
           life.vec$Lo[i] <- life.vec$Lo[i-1]*life.vec$Surv[i-1]     #Survivorship vector calcs
@@ -161,7 +161,7 @@ scallop_model_fun <- function(scenario){
       }else if(scenario$catch$q_flag=='VB'){
         qt[1] <- scenario$catch$qmax/(1+scenario$per.rec$kq*B[1])                              #Q as a function of Vulnerable Biomass
       }
-      et[1] <- scenario$catch$effort[1] * scenario$catch$e_years[1] #Effort in the first month
+      et[1] <- scenario$catch$effort[1] * scenario$catch$E_years[1] #Effort in the first month
       # hr[1] <- 1-exp(-qt[1]*et[1])
       hr_harv[1,] <- 1-exp(-qt[1]*et[1]*scenario$life.vec$Vul)                                                             #Harvest rate calc, turning continuous F into a discrete harvest rate
      
@@ -171,7 +171,7 @@ scallop_model_fun <- function(scenario){
         hcpue[1] <- sum((nage[1,]/sh2gal(scenario$life.vec$TL))*hr_harv[1,])/et[1] #raw catch rates not accounting for bag *also not accounting for loss due to So
         hcpue[1] <- ifelse(is.nan(hcpue[1]),0,hcpue[1])  #trap for cases where effort <- 0, will throw div0 errors (NaN)
         #using a half-normal truncated at zero to get the density of 
-        dens.catch <- dtruncnorm(scenario$catch$catch.rate[[1]], a=0, mean=hcpue[1], sd=hcpue[1]*0.4)
+        dens.catch <- dtruncnorm(scenario$catch$catch.rate[[1]], a=0, mean=hcpue[1], sd=hcpue[1]*0.4) #sd = 40% CV * mean
         dens.catch <- dens.catch/sum(dens.catch) #need to sum to 1 to prevent loss from density range
         hpue[1] <- sum(dens.catch*scenario$catch$ret[[1]])  #rate of actually harvestable fish accounting for bag and size
     }else{
@@ -214,7 +214,7 @@ scallop_model_fun <- function(scenario){
           }else if(scenario$catch$q_flag=='VB'){
             qt[i] <- scenario$catch$qmax/(1+scenario$per.rec$kq*B[i-1])                                                    #q as a function of vul bio
           }
-          et[i] <- scenario$catch$effort[timer[i]] * scenario$catch$e_years[yr.timer[i]] #Calculation of Effort
+          et[i] <- scenario$catch$effort[timer[i]] * scenario$catch$E_years[yr.timer[i]] #Calculation of Effort
           # hr[i] <- 1-exp(-qt[i]*et[i])
           hr_harv[i,] <- 1-exp(-qt[i]*et[i]*scenario$life.vec$Vul)
          
