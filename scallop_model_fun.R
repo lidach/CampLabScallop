@@ -216,6 +216,8 @@ scallop_model_fun <- function(scenario){
   #Summary (no need to be in for loop)
       N <- rowSums(nage)                                                        #total numbers in each month, sum of numbers across ages
       VB <- nage%*%(scenario$life.vec$Wt*scenario$life.vec$Vul)                 #vulernable biomass, sum of numbers at age * weight at age * vul at age
+      eggs_mon <- rowSums(t(t(nage)*scenario$life.vec$Fec*scenario$life.vec$Mat*scenario$life.vec$prob_spawn)) # eggs produced each month, calculated for visualization and results
+      eggs_mon_age <- t(t(nage)*scenario$life.vec$Fec*scenario$life.vec$Mat*scenario$life.vec$prob_spawn) # eggs per month per age
       yield_n <- rowSums(hr_harv*nage*pr_hr)                                    #yield in numbers
       yield_b <-  rowSums(hr_harv*(nage%*%diag(scenario$life.vec$Wt))*pr_hr)    #yield in biomass
       cpue_n <- yield_n/et                                                      #cpue in numbers, yield/effort
@@ -227,11 +229,13 @@ scallop_model_fun <- function(scenario){
                   results=data.frame(time = 1:scenario$sim$month,
                                       N = N,
                                       eggs = eggs,
+                                      eggs_mon = eggs_mon,
+                                      eggs_mon_age = eggs_mon_age,
                                       B = B,
                                       VB = VB,
                                       recruits = recruits,
                                       yield_n = yield_n,
-                                      yeild_b = yield_b,
+                                      yield_b = yield_b,
                                       cpue_n = cpue_n,
                                       cpue_b = cpue_b,
                                       et = et,
@@ -239,7 +243,7 @@ scallop_model_fun <- function(scenario){
                                       hcpue = hcpue,
                                       hpue = hpue,
                                       hr = hr,
-                                      pr_hr = pr_hr)
+                                      pr_hr = pr_hr),
                   matrix = list(nage = nage,
                                 hr_harv = hr_harv))
     return(ret.l)
