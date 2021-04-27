@@ -97,11 +97,11 @@ with(scen5$results,{
     })
 
 # season length
-scenario5 <- scenario
-scenario5$catch$bag <- c(2,2,2,2,2,2,2,2,2,2,2,2)
-scenario5$catch$season <- c(0,0,0,0,0,0,1,1,1,1,0,0)
-scen5 <- scallop_model_fun(scenario5)
-with(scen5$results,{
+scenario6 <- scenario
+scenario6$catch$bag <- c(2,2,2,2,2,2,2,2,2,2,2,2)
+scenario6$catch$season <- c(0,0,0,0,0,0,1,1,1,1,0,0)
+scen6 <- scallop_model_fun(scenario5)
+with(scen6$results,{
         par(mfrow=c(3,1), mar=c(3,5,1,1), las=1, mgp=c(4,1,0))
         plot(time, VB, type="l", col="blue", 
              lwd=3, ylim=c(0, max(VB)))
@@ -114,11 +114,11 @@ with(scen5$results,{
     })
 
 # rolling bag and season start
-scenario6 <- scenario
-scenario6$catch$bag <- c(1,1,1,1,1,1,1,2,2,2,2,2)
-scenario6$catch$season <- c(0,0,0,0,0,0,0,1,1,1,0,0)
-scen6 <- scallop_model_fun(scenario6)
-with(scen6$results,{
+scenario7 <- scenario
+scenario7$catch$bag <- c(1,1,1,1,1,1,1,2,2,2,2,2)
+scenario7$catch$season <- c(0,0,0,0,0,0,0,1,1,1,0,0)
+scen7 <- scallop_model_fun(scenario6)
+with(scen7$results,{
         par(mfrow=c(3,1), mar=c(3,5,1,1), las=1, mgp=c(4,1,0))
         plot(time, VB, type="l", col="blue", 
              lwd=3, ylim=c(0, max(VB)))
