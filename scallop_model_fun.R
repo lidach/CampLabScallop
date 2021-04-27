@@ -10,14 +10,14 @@
 
 scenario <- list( 
                  life = list(amax = 18,              #maximum age in the model, this is not a plus group (we just kill all scallops after this month)
-                            Ro = 1e6,                #Unfished Recruitment, set at 1 million 
+                            Ro = 1e7,                #Unfished Recruitment, set at 1 million 
                             CR = 8,                  #Compensation Ratio, Arbitrarily set
                             vbk = 4/12,              #Von-Bertalanffy K
                             vblinf = 65,             #Von-Bertalanffy L-infinity 
                             vbt0 = 0,                #Von-Bertalanffy t0
                             alw = 0.0001,            #Weight-Length a
                             alwb = 3,                #Weight-Length b
-                            wmat = 12,               #Weight at maturity
+                            # wmat = 12,               #Weight at maturity
                             amat = 10,               #Age at maturity
                             msd = .1,                #Maturity sd for logistic function
                             vlh = 50,                #Vulnerability logistic param
@@ -30,7 +30,7 @@ scenario <- list(
                   catch = list( q_flag = "constant",  #Catchability Option______constant or VB
                                #Effort in each month; merges season open/close
                                 effort = c(0,0,0,0,0,0,11415,6929,4255,0,0,0)*3.8, # vessels, need to multiply by 3.8 to get persons
-                                q = 0.0000319/3.8,   #Catchability, Granneman paper - value is per vessel so divide by 3.8 to get persons 
+                                q = 0.000319/3.8,   #Catchability, Granneman paper - value is per vessel so divide by 3.8 to get persons 
                                 qmax = .0005,  #Max Catchability (for q varying with VB)
                                 bag_unit = "gallon",   #Bag limit Units_____gallon or numbers
                                 bag = rep(2,12), #Bag limit________rep(2,12) for constant
@@ -216,6 +216,8 @@ scallop_model_fun <- function(scenario){
   #Summary (no need to be in for loop)
       N <- rowSums(nage)                                                        #total numbers in each month, sum of numbers across ages
       VB <- nage%*%(scenario$life.vec$Wt*scenario$life.vec$Vul)                 #vulernable biomass, sum of numbers at age * weight at age * vul at age
+      eggs_mon <- rowSums(t(t(nage)*scenario$life.vec$Fec*scenario$life.vec$Mat*scenario$life.vec$prob_spawn)) # eggs produced each month, calculated for visualization and results
+      eggs_mon_age <- t(t(nage)*scenario$life.vec$Fec*scenario$life.vec$Mat*scenario$life.vec$prob_spawn) # eggs per month per age
       yield_n <- rowSums(hr_harv*nage*pr_hr)                                    #yield in numbers
       yield_b <-  rowSums(hr_harv*(nage%*%diag(scenario$life.vec$Wt))*pr_hr)    #yield in biomass
       cpue_n <- yield_n/et                                                      #cpue in numbers, yield/effort
@@ -227,11 +229,13 @@ scallop_model_fun <- function(scenario){
                   results=data.frame(time = 1:scenario$sim$month,
                                       N = N,
                                       eggs = eggs,
+                                      eggs_mon = eggs_mon,
+                                      eggs_mon_age = eggs_mon_age,
                                       B = B,
                                       VB = VB,
                                       recruits = recruits,
                                       yield_n = yield_n,
-                                      yeild_b = yield_b,
+                                      yield_b = yield_b,
                                       cpue_n = cpue_n,
                                       cpue_b = cpue_b,
                                       et = et,
@@ -239,7 +243,7 @@ scallop_model_fun <- function(scenario){
                                       hcpue = hcpue,
                                       hpue = hpue,
                                       hr = hr,
-                                      pr_hr = pr_hr)
+                                      pr_hr = pr_hr),
                   matrix = list(nage = nage,
                                 hr_harv = hr_harv))
     return(ret.l)
