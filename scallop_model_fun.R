@@ -10,7 +10,7 @@
 
 scenario <- list( 
                  life = list(amax = 18,              #maximum age in the model, this is not a plus group (we just kill all scallops after this month)
-                            Ro = 1e7,                #Unfished Recruitment, set at 10 million 
+                            Ro = 3e7,                #Unfished Recruitment, set at 10 million 
                             CR = 8,                  #Compensation Ratio, Arbitrarily set
                             vbk = 4/12,              #Von-Bertalanffy K
                             vblinf = 65,             #Von-Bertalanffy L-infinity 
@@ -34,7 +34,7 @@ scenario <- list(
                                 E_cap = FALSE, # this is a switch to cap effort @ emax or to allow it to scale following the observed effort decline from Granneman paper
                                 E_con = FALSE, # this is a switch for constant effort
                                 E_open = c(0,0,0,0,0,0,1,1,1,0,0,0), #this is a vector of months that tells the model where to apply the effort. The effort does not need to be sequential as the eff_spread function will allocate the effort in each month
-                                q = 0.000319/3.8,   #Catchability, Granneman paper - value is per vessel so divide by 3.8 to get persons (off by one-order of magnitude for scaling)
+                                q = 0.0000319/3.8,   #Catchability, Granneman paper - (0.0000319) value is per vessel so divide by 3.8 to get persons (off by one-order of magnitude for scaling)
                                 qmax = .0005,  #Max Catchability (for q varying with VB)
                                 bag_unit = "gallon",   #Bag limit Units_____gallon or numbers
                                 bag = rep(2,12), #Bag limit________rep(2,12) for constant
