@@ -10,23 +10,22 @@
 
 scenario <- list( 
                  life = list(amax = 18,              #maximum age in the model, this is not a plus group (we just kill all scallops after this month)
-                            Ro = 3e7,                #Unfished Recruitment, set at 10 million 
+                            Ro = 3e7,                #Unfished Recruitment, set at 30 million 
                             CR = 8,                  #Compensation Ratio, Arbitrarily set
-                            vbk = 4/12,              #Von-Bertalanffy K
-                            vblinf = 65,             #Von-Bertalanffy L-infinity 
+                            vbk = 1/3,              #Von-Bertalanffy K
+                            vblinf = 60,             #Von-Bertalanffy L-infinity 
                             vbt0 = 0,                #Von-Bertalanffy t0
                             alw = 0.0001,            #Weight-Length a
                             alwb = 3,                #Weight-Length b
                             # wmat = 12,               #Weight at maturity
-                            amat = 10,               #Age at maturity
-                            msd = .1,                #Maturity sd for logistic function
-                            vlh = 50,                #Vulnerability logistic param
-                            vsd = 5,                 #Vulnerability sd, for logistic form
-                            M = 0.2,                 #Natural Mortality
+                            amat = 5.5,               #Age at 50% maturity
+                            mgr = 2.5,                #Maturity logistic function growth rate
+                            vlh = 50,                #Vulnerability logistic param, size at 50% selected
+                            vgr = 0.2,                 #Vulnerability logistic param, growth rate
+                            M = 0.25,                 #Natural Mortality, note this is a Monthly Instantaneous Rate
                             lorenzc = 1,             #Lorenzen exponent for Lorenzen M
                             #Probability of Scallop Spawning across any age
-                            prob_spawn = c(0.2,0.2,0.3,0.3,0.2,0.1,            
-                                           0.2,0.5,0.8,0.8,0.2,0.1),
+                            prob_spawn = c(0.05,0.05,0.05,0.05,0.05,0.05,0.05,0.09,0.125,0.09,0.07,0.05),
                             semelparous=FALSE),
                   catch = list( q_flag = "constant",  #Catchability Option______constant or VB
                                #Effort in each month; merges season open/close
@@ -72,7 +71,7 @@ scallop_model_fun <- function(scenario){
         life.vec <- data.frame(Age = seq(1,amax))
         life.vec$TL <- vblinf*(1-exp(-vbk*(life.vec$Age-vbt0)))     #Length of scallops at age, VB function
         life.vec$Wt <- (alw*(life.vec$TL)^alwb)                     #Weight of Scallops WL function
-        life.vec$Vul <- 1/(1+exp(-(life.vec$TL-vlh)/vsd))           #Vulnerability of Scallops to harvest, logistic function 
+        life.vec$Vul <- 1/(1+exp(-vgr*(life.vec$TL-vlh)))           #Vulnerability of Scallops to harvest, logistic function 
         life.vec$Surv <- exp(-(M*TLref/life.vec$TL))^lorenzc        #Survival of scallops at age (based on Lorenzen M)
         life.vec$Lo <- life.vec$Lfished <- vector(length=amax)      #Survivorship vectors
         life.vec$Lo[1] <- life.vec$Lfished[1] <- 1                  #Survivorship vector start
@@ -82,7 +81,7 @@ scallop_model_fun <- function(scenario){
           life.vec$Lo[i] <- life.vec$Lo[i-1]*life.vec$Surv[i-1]     #Survivorship vector calcs
           life.vec$Lfished[i] <- life.vec$Lfished[i-1]*exp(-1*(-log(life.vec$Surv[i-1]) + (life.vec$pseudo.eff[i-1]*scenario$catch$q*life.vec$Vul[i-1]))) #Survivorship fished, Continuous
         }
-        life.vec$Mat <- 1/(1+exp(-(life.vec$Age-amat)/msd))         #Maturity at month, based on logistic
+        life.vec$Mat <- 1/(1+exp(-mgr*(life.vec$Age-amat)))         #Maturity at month, based on logistic
         life.vec$Fec <- .1*life.vec$Wt                              #Fecundity, scalar of weight at month
         life.vec$prob_spawn <- rep(0,amax)                          #Starting probability of spawn vector
         # normalization necessary to only scallop to spawn once, second year - iteroparity
