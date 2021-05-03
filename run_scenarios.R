@@ -17,7 +17,7 @@ scen_str$base <- scallop_model_fun(scenario)
 
 #Decrease Bag, Basically unfished scenario
     scenario2 <- scenario
-    scenario2$catch$bag <- rep(0.5,12)
+    scenario2$catch$bag <- rep(0.001,12)
     scen_str$scen2 <- scallop_model_fun(scenario2)
 
 # season length - increase in total effort, extend one month forward
@@ -81,8 +81,7 @@ scen_str$base <- scallop_model_fun(scenario)
 ##################
 # sensitivity runs
 ##################
-    sens_str <- list()
-
+sens_str <- list()
 perchange <- 0.25 # +/- 25%
 # changes in catchability - look at hcpue and pr_hr
     senscen_q1 <- scenario
@@ -190,7 +189,11 @@ perchange <- 0.25 # +/- 25%
 ##################################
 # save all scenarios to one .RData
     save(scen_str, sens_str, sens_q_low_str, sens_q_high_str,
-     file = "scenario_sensitivity_storage.RData")
+     file = "./Scenario_Figures/scenario_sensitivity_storage.RData")
+
+    rm(list=ls())
+    gc()
+    load("./Scenario_Figures/scenario_sensitivity_storage.RData")
 
 ##################################
     #this function helps do scientific notation without the e+XX stuff
@@ -210,6 +213,7 @@ perchange <- 0.25 # +/- 25%
                     label = v,
                     r = range/as.numeric(paste0('1e',x))))
     }
+
 ##################################
     #grab the global ranges for dynamic settings
     vb.r <- range(sapply(scen_str,function(x)range(x$results$VB,na.rm=T)))
@@ -218,19 +222,28 @@ perchange <- 0.25 # +/- 25%
     rec.r <- range(sapply(scen_str,function(x)range(x$results$recruits,na.rm=T)))
     eggs.r <- range(sapply(scen_str,function(x)range(x$results$eggs_mon,na.rm=T)))
 
-
     #plot scenarios
+    plot_out_type <- "tiff"
     for(i in 1:length(scen_str)){
         if(i==1){
-            pdf(file=paste0("./Scenario_Figures/scenario_base_results.pdf"))
+            if(plot_out_type == "pdf") pdf(file=paste0("./Scenario_Figures/scenario_base_results.pdf"))
+            if(plot_out_type == "tiff") tiff(filename=paste0("./Scenario_Figures/scenario_base_results.tiff"),height = 17, width = 20, units = 'cm', compression = "lzw", res = 500)
+
         }else{
-            pdf(file=paste0("./Scenario_Figures/scenario_",
+            if(plot_out_type == "pdf"){
+                pdf(file=paste0("./Scenario_Figures/scenario_",
                         formatC(i-1,width=2,flag="0"),
                         "_results.pdf"))
+            }
+            if(plot_out_type == "tiff"){
+                tiff(filename=paste0("./Scenario_Figures/scenario_",
+                        formatC(i-1,width=2,flag="0"),
+                        "_results.tiff"),height = 17, width = 20, units = 'cm', compression = "lzw", res = 500)
+            }
         }
         
             with(scen_str[[i]]$results,{
-                N <- nrows(scen_str[[i]]$results)
+                Nt <- nrow(scen_str[[i]]$results)
               par(mfrow=c(3,2), mar=c(2,3.5,1,1), las=1, mgp=c(2.5,0.5,0), tck=-0.015)
               #plot 1
                 vb.sci <- sci.transl(vb.r)
@@ -238,10 +251,10 @@ perchange <- 0.25 # +/- 25%
                      ylab=paste0("Vul. Biomass (",vb.sci$label,")"),
                      lwd=3, ylim=vb.sci$r)
                 abline(lm(VB/vb.sci$scale~time), lwd=2, lty=1)
-                abline(v=seq(0.5,N+0.5,12), lty=2, col='gray70')
+                abline(v=seq(0.5,Nt+0.5,12), lty=2, col='gray70')
               #plot 2
                 plot(time, N/N[1], type='l', ylab = "Depletion (prop. Numbers)", ylim=c(0,1), lwd=2, col="mediumpurple4")
-                abline(v=seq(0.5,N+0.5,12), lty=2, col='gray70')
+                abline(v=seq(0.5,Nt+0.5,12), lty=2, col='gray70')
               #plot 3
                 et2 <- et
                 et2[et2==0] <- NA
@@ -250,9 +263,9 @@ perchange <- 0.25 # +/- 25%
                 plot(time, et2/et.sci$scale, col="red", 
                      lwd=3, type='l',
                      ylab=paste0("Effort (Persons; ", et.sci$label,")"), 
-                     ylim=et.sci$r)
+                         ylim=et.sci$r)
                 points(time, et2/et.sci$scale, col='red', pch=16)
-                abline(v=seq(0.5,N+0.5,12), lty=2, col='gray70')
+                abline(v=seq(0.5,Nt+0.5,12), lty=2, col='gray70')
               #plot 4
                 yield.sci <- sci.transl(yield.r)
                 yield2 <- yield_n
@@ -261,7 +274,7 @@ perchange <- 0.25 # +/- 25%
                      type='l', pch=16, lwd=3,
                      ylab = paste0("Catch (numbers; ",yield.sci$label,")"),
                       ylim=yield.sci$r, col="salmon3", cex=1.5)
-                abline(v=seq(0.5,N+0.5,12), lty=2, col='gray70')
+                abline(v=seq(0.5,Nt+0.5,12), lty=2, col='gray70')
                 points(time, yield2/yield.sci$scale,col="salmon3",pch=16)
               #plot 5
                 rec.sci <- sci.transl(rec.r)
@@ -273,52 +286,193 @@ perchange <- 0.25 # +/- 25%
                 plot(time, eggs_mon/eggs.sci$scale, type='l', 
                      ylab = paste0("Eggs (Monthly; ", eggs.sci$label,")"), 
                      ylim=eggs.sci$r, lwd=2, col="seagreen")
-                abline(v=seq(0.5,N+0.5,12), lty=2, col='gray70')
+                abline(v=seq(0.5,Nt+0.5,12), lty=2, col='gray70')
             })
         dev.off()
     }
 
+rm(list=setdiff(ls(), c("scen_str","sens_q_low_str","sens_q_high_str","sens_str")))
+gc()
 
+##################################
+## bar plots
+##################################
+## regular q scenarios
+    ## relative errors
+    # calculations of metrics
+    # "SPR"
+        eggs0 <- sapply(1:14, function(x) scen_str[[x]]$results$eggs[12])
+        eggs_list <- sapply(1:14, function(x) mean(c(scen_str[[x]]$results$eggs[6:9*12]),sum(scen_str[[x]]$results$eggs_mon[109:120]))) # no eggs calcs in last year in results$eggs so needed to calculate from eggs_mon
+        SPR <- eggs_list/eggs0
+    # hcpue (open months, last 5 years) - is there a better way to do this?
+        hcpue_list <- lapply(1:14, function(x) matrix(scen_str[[x]]$results$hcpue, nrow = 12, ncol = 10))
+        for(i in 1:14) hcpue_list[[i]][hcpue_list[[i]] == 0] <- NA
+        hcpue <- sapply(1:14, function(x) colMeans(hcpue_list[[x]], na.rm = TRUE))
+        hcpue <- sapply(1:14, function(x) mean(hcpue[6:10,x]))    
+    # pr_hr (open montths, last 5 years)
+        prhr_list <- lapply(1:14, function(x) matrix(scen_str[[x]]$results$pr_hr, nrow = 12, ncol = 10))
+        for(i in 1:14) prhr_list[[i]][prhr_list[[i]] == 0] <- NA
+        pr_hr <- sapply(1:14, function(x) colMeans(prhr_list[[x]], na.rm = TRUE))
+        pr_hr <- sapply(1:14, function(x) mean(pr_hr[6:10, x])) 
+        pr_hr[3] <- 0 # "unfished" scenario
+    # combine all results to get relative errors
+    SPR_base <- SPR[1]; hcpue_base <- hcpue[1]; prhr_base <- pr_hr[1]
+    res_mat_scen <- matrix(NA, nrow = 3, ncol = 13) 
+        res_mat_scen[1,] <- sapply(2:14, function(x) (SPR_base-SPR[x])/SPR_base)
+        res_mat_scen[2,] <- sapply(2:14, function(x) (hcpue_base-hcpue[x])/hcpue_base)
+        res_mat_scen[3,] <- sapply(2:14, function(x) (prhr_base-pr_hr[x])/prhr_base)
+        colnames(res_mat_scen) <- names(scen_str)[2:14]
+        rownames(res_mat_scen) <- c("SPR","hcpue","pr_hr")
+        res_mat_scen
 
+## low q scenarios
+    ## relative errors
+    # calculations of metrics
+    # "SPR"
+        eggs0 <- sapply(1:13, function(x) sens_q_low_str[[x]]$results$eggs[12])
+        eggs_list <- sapply(1:13, function(x) mean(c(sens_q_low_str[[x]]$results$eggs[6:9*12]),sum(sens_q_low_str[[x]]$results$eggs_mon[109:120]))) # no eggs calcs in last year in results$eggs so needed to calculate from eggs_mon
+        SPR <- eggs_list/eggs0
+    # hcpue (open months, last 5 years) - is there a better way to do this?
+        hcpue_list <- lapply(1:13, function(x) matrix(sens_q_low_str[[x]]$results$hcpue, nrow = 12, ncol = 10))
+        for(i in 1:13) hcpue_list[[i]][hcpue_list[[i]] == 0] <- NA
+        hcpue <- sapply(1:13, function(x) colMeans(hcpue_list[[x]], na.rm = TRUE))
+        hcpue <- sapply(1:13, function(x) mean(hcpue[6:10,x]))    
+    # pr_hr (open montths, last 5 years)
+        prhr_list <- lapply(1:13, function(x) matrix(sens_q_low_str[[x]]$results$pr_hr, nrow = 12, ncol = 10))
+        for(i in 1:13) prhr_list[[i]][prhr_list[[i]] == 0] <- NA
+        pr_hr <- sapply(1:13, function(x) colMeans(prhr_list[[x]], na.rm = TRUE))
+        pr_hr <- sapply(1:13, function(x) mean(pr_hr[6:10, x])) 
+        pr_hr[2] <- 0 # "unfished" scenario
+    # combine all results to get relative errors
+    res_mat_lowq <- matrix(NA, nrow = 3, ncol = 13) 
+        res_mat_lowq[1,] <- sapply(1:13, function(x) (SPR_base-SPR[x])/SPR_base)
+        res_mat_lowq[2,] <- sapply(1:13, function(x) (hcpue_base-hcpue[x])/hcpue_base)
+        res_mat_lowq[3,] <- sapply(1:13, function(x) (prhr_base-pr_hr[x])/prhr_base)
+        colnames(res_mat_lowq) <- names(sens_q_low_str)[1:13]
+        rownames(res_mat_lowq) <- c("SPR","hcpue","pr_hr")
+        res_mat_lowq
 
-###@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+## high q scenarios
+    ## relative errors
+    # calculations of metrics
+    # "SPR"
+        eggs0 <- sapply(1:13, function(x) sens_q_high_str[[x]]$results$eggs[12])
+        eggs_list <- sapply(1:13, function(x) mean(c(sens_q_high_str[[x]]$results$eggs[6:9*12]),sum(sens_q_high_str[[x]]$results$eggs_mon[109:120]))) # no eggs calcs in last year in results$eggs so needed to calculate from eggs_mon
+        SPR <- eggs_list/eggs0
+    # hcpue (open months, last 5 years) - is there a better way to do this?
+        hcpue_list <- lapply(1:13, function(x) matrix(sens_q_high_str[[x]]$results$hcpue, nrow = 12, ncol = 10))
+        for(i in 1:13) hcpue_list[[i]][hcpue_list[[i]] == 0] <- NA
+        hcpue <- sapply(1:13, function(x) colMeans(hcpue_list[[x]], na.rm = TRUE))
+        hcpue <- sapply(1:13, function(x) mean(hcpue[6:10,x]))    
+    # pr_hr (open montths, last 5 years)
+        prhr_list <- lapply(1:13, function(x) matrix(sens_q_high_str[[x]]$results$pr_hr, nrow = 12, ncol = 10))
+        for(i in 1:13) prhr_list[[i]][prhr_list[[i]] == 0] <- NA
+        pr_hr <- sapply(1:13, function(x) colMeans(prhr_list[[x]], na.rm = TRUE))
+        pr_hr <- sapply(1:13, function(x) mean(pr_hr[6:10, x])) 
+        pr_hr[2] <- 0 # "unfished" scenario
+    # combine all results to get relative errors
+    res_mat_highq <- matrix(NA, nrow = 3, ncol = 13) 
+        res_mat_highq[1,] <- sapply(1:13, function(x) (SPR_base-SPR[x])/SPR_base)
+        res_mat_highq[2,] <- sapply(1:13, function(x) (hcpue_base-hcpue[x])/hcpue_base)
+        res_mat_highq[3,] <- sapply(1:13, function(x) (prhr_base-pr_hr[x])/prhr_base)
+        colnames(res_mat_highq) <- names(sens_q_high_str)[1:13]
+        rownames(res_mat_highq) <- c("SPR","hcpue","pr_hr")
+        res_mat_highq
 
-# rm(list=setdiff(ls(),list_name)))
+## plots
+    col <- c("#009999", "#0000FF","#104E8B")
+    SPR <- t(cbind(res_mat_lowq[1,], res_mat_scen[1,], res_mat_highq[1,]))
+    hcpue <- t(cbind(res_mat_lowq[2,], res_mat_scen[2,], res_mat_highq[2,]))
+    pr_hr <- t(cbind(res_mat_lowq[3,], res_mat_scen[3,], res_mat_highq[3,]))
+    plot_by <- "qs"
+    plot_export <- TRUE
 
+    if(plot_by == "metric"){
+        # regular q
+            if(plot_export == TRUE) tiff(filename=paste0("./Scenario_Figures/2_rel_errors_scen.tiff"),height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
+            par(mar=c(6,3.5,2,1), las=1, mgp=c(2.5,0.5,0), tck=-0.015)
+            barplot(res_mat_scen[,c(1,3:13)], beside = TRUE, ylim = c(-0.3,0.5), las = 2, col = col, ylab = "Relative error", main = "base catchability management scenarios") # removed "unfished" scenario for now
+            legend("topright", legend = c("Eggs/Unfished", "CPUE", "Probability of legal harvest"), fill = col, box.lty = 0)
+            if(plot_export == TRUE) dev.off()
+        # low q
+            if(plot_export == TRUE) tiff(filename=paste0("./Scenario_Figures/2_rel_errors_lowq.tiff"),height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
+            par(mar=c(6,3.5,1,1), las=1, mgp=c(2.5,0.5,0), tck=-0.015)
+            barplot(res_mat_lowq[,c(1,3:13)], beside = TRUE, ylim = c(-0.4,0.5), las = 2, col = col, ylab = "Relative error", main = "low catchability management scenarios") # removed "unfished" scenario for now
+            legend("topright", legend = c("Eggs/Unfished", "CPUE", "Probability of legal harvest"), fill = col, box.lty = 0)
+            if(plot_export == TRUE) dev.off()
+        # high q
+            if(plot_export == TRUE) tiff(filename=paste0("./Scenario_Figures/2_rel_errors_highq.tiff"),height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
+            par(mar=c(6,3.5,1,1), las=1, mgp=c(2.5,0.5,0), tck=-0.015)
+            barplot(res_mat_highq[,c(1,3:13)], beside = TRUE, ylim = c(-0.3,0.6), las = 2, col = col, ylab = "Relative error", main = "high catchability management scenarios") # removed "unfished" scenario for now
+            legend("topright", legend = c("Eggs/Unfished", "CPUE", "Probability of legal harvest"), fill = col, box.lty = 0)
+            if(plot_export == TRUE) dev.off()
+    } else {
+        # SPR
+            if(plot_export == TRUE) tiff(filename=paste0("./Scenario_Figures/1_rel_errors_SPR.tiff"),height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
+            par(mar=c(6,3.5,1,1), las=1, mgp=c(2.5,0.5,0), tck=-0.015)
+            barplot(SPR[,c(1,3:13)], beside = TRUE, ylim = c(-0.3,0.6), las = 2, col = col, ylab = "Relative error", main = "Eggs/Unfished management scenarios") # removed "unfished" scenario for now
+            legend("topright", legend = c("low q", "base q", "high q"), fill = col, box.lty = 0)
+            if(plot_export == TRUE) dev.off()
+        # hcpue
+            if(plot_export == TRUE) tiff(filename=paste0("./Scenario_Figures/1_rel_errors_hcpue.tiff"),height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
+            par(mar=c(6,3.5,1,1), las=1, mgp=c(2.5,0.5,0), tck=-0.015)
+            barplot(hcpue[,c(1,3:13)], beside = TRUE, ylim = c(-0.4,0.5), las = 2, col = col, ylab = "Relative error", main = "Catch per unit of effort management scenarios") # removed "unfished" scenario for now
+            legend("topright", legend = c("low q", "base q", "high q"), fill = col, box.lty = 0)
+            if(plot_export == TRUE) dev.off()
+        # pr_hr
+            if(plot_export == TRUE) tiff(filename=paste0("./Scenario_Figures/1_rel_errors_prhr.tiff"),height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
+            par(mar=c(6,3.5,1,1), las=1, mgp=c(2.5,0.5,0), tck=-0.015)
+            barplot(pr_hr[,c(1,3:13)], beside = TRUE, ylim = c(-0.05,0.05), las = 2, col = col, ylab = "Relative error", main = "Probability of legal harvest management scenarios") # removed "unfished" scenario for now
+            legend("topright", legend = c("low q", "base q", "high q"), fill = col, box.lty = 0)
+            if(plot_export == TRUE) dev.off()
+    }
 
-## Run all scenarios - one list ####
-# base
-# windows()
-# with(base$results,{
-#         par(mfrow=c(3,2), mar=c(3,5,1,1), las=1, mgp=c(4,1,0))
-#         plot(time, VB, type="l", col="blue",ylab="Vul Biomass",lwd=3, ylim=c(0, max(VB)))
-#         abline(lm(VB~time), lwd=2, lty=3)
-#         plot(time, N/N[1], type='l', ylab = "Depletion (Numbers)", ylim=c(0,1), lwd=2, col="mediumpurple4")
-#         et2 <- et
-#         et2[et2==0] <- NA
-#         plot(time, et2, col="red", lwd=3, type='l',ylab="Effort (Vessels)", ylim=c(0,50000))
-#         plot(time[yield_n>0], yield_n[yield_n>0], type='p', pch=16,ylab = "Catch (numbers)", ylim=c(0,110000), col="salmon3", cex=1.5, xlim=c(0,120))
-#         abline(v=seq(0.5,120.5,12), lty=2)
-#         plot(time[recruits>0], recruits[recruits>0], type='p', pch=16, ylab = "Recruits", xlim=c(0,120), ylim=c(0,1.35e6), col='darkgreen', cex=1.5)
-#         plot(time, eggs_mon, type='l', ylab = "Eggs (Monthly)", ylim=c(0,100000), lwd=2, col="seagreen")
-# })
+rm(list=setdiff(ls(), c("scen_str","sens_q_low_str","sens_q_high_str","sens_str")))
+gc()   
 
-# # Scenarios
-# with(scen5$results,{
-#   par(mfrow=c(3,2), mar=c(3,5,1,1), las=1, mgp=c(4,1,0))
-#   plot(time, VB, type="l", col="blue",ylab="Vul Biomass",lwd=3, ylim=c(0, max(VB)))
-#   abline(lm(VB~time), lwd=2, lty=3)
-#   plot(time, N/N[1], type='l', ylab = "Depletion (Numbers)", ylim=c(0,1), lwd=2, col="mediumpurple4")
-#   et2 <- et
-#   et2[et2==0] <- NA
-# #  plot(time, et2, col="red", lwd=3, type='l',ylab="Effort (Vessels)", ylim=c(0,50000))
-#   plot(time, et2, col="red", lwd=3, type='l',ylab="Effort (Vessels)", ylim=c(0,95000))
-#   plot(time[yield_n>0], yield_n[yield_n>0], type='p', pch=16,ylab = "Catch (numbers)", ylim=c(0,110000), col="salmon3", cex=1.5, xlim=c(0,120))
-#   abline(v=seq(0.5,120.5,12), lty=2)
-#   plot(time[recruits>0], recruits[recruits>0], type='p', pch=16, ylab = "Recruits", xlim=c(0,120), ylim=c(0,1.35e6), col='darkgreen', cex=1.5)
-#   plot(time, eggs_mon, type='l', ylab = "Eggs (Monthly)", ylim=c(0,100000), lwd=2, col="seagreen")
-# })
+##################################
+## sensitivity analysis plots
+## SPR
+    SPR_base <- c(scen_str$base$results$eggs[1:9*12],sum(scen_str$base$results$eggs_mon[109:120]))/scen_str$base$results$eggs[12]
+    eggs0 <- sapply(1:10, function(x) sens_str[[x]]$results$eggs[12])
+    eggs_list <- NA
+        eggs_list <- lapply(1:10, function(x) c(sens_str[[x]]$results$eggs[1:9*12],sum(sens_str[[x]]$results$eggs_mon[109:120]))) # no eggs calcs in last year in results$eggs so needed to calculate from eggs_mon
+    SPR_list <- lapply(1:10, function(x) eggs_list[[x]]/eggs0[x])
+## hcpue - average per open season
+    hcpue_base <- matrix(scen_str$base$results$hcpue, nrow = 12, ncol = 10)
+        hcpue_base[hcpue_base == 0] <- NA
+        hcpue_base <- colMeans(hcpue_base, na.rm = TRUE)
+    hcpue_list <- lapply(1:10, function(x) matrix(sens_str[[x]]$results$hcpue, nrow = 12, ncol = 10))
+        for(i in 1:10) hcpue_list[[i]][hcpue_list[[i]] == 0] <- NA
+        hcpue_list <- lapply(1:10, function(x) colMeans(hcpue_list[[x]], na.rm = TRUE))
+## pr_hr - average per open season
+    prhr_base <- matrix(scen_str$base$results$pr_hr, nrow = 12, ncol = 10)
+        prhr_base[prhr_base == 0] <- NA
+        prhr_base <- colMeans(prhr_base, na.rm = TRUE)
+    prhr_list <- lapply(1:10, function(x) matrix(sens_str[[x]]$results$pr_hr, nrow = 12, ncol = 10))
+        for(i in 1:10) prhr_list[[i]][prhr_list[[i]] == 0] <- NA
+        prhr_list <- lapply(1:10, function(x) colMeans(prhr_list[[x]], na.rm = TRUE))
 
+## plots
+plot_export <- TRUE
+v <- seq(2,10,2)
+plot_names <- c(rep("sensitivity in q",2), rep("sensitivity in M",2), rep("sensivity in vbk",2), rep("sensitivity in compensation ratio",2), rep(expression("sensitivity in a"[mat]),2))
+plot_export_names <- c(rep("sens_q",2), rep("sens_M",2), rep("sens_vbk",2), rep("sens_CR",2), rep("sens_amat",2))
 
-# bar plots or dot plot (mean and variance) - SPR (eggs - five years/eggs0) and hcpue (avg across open months) - last five years 
-# pr_hr?
+for(i in seq(1,10,2)){
+    if(plot_export == TRUE) tiff(filename=paste0("./Scenario_Figures/", plot_export_names[i],".tiff"), height = 17, width = 20, units = 'cm', compression = "lzw", res = 500)
+    par(mfrow=c(3,1), mar=c(2,3.5,2,7.3), las=1, mgp=c(2.5,0.5,0), tck=-0.015, xpd = TRUE)
+        plot(SPR_base, type = "l", ylim = c(0,1), lwd = 2, ylab = "Eggs/Unfished", xlab = "", main = plot_names[i])
+            lines(SPR_list[[i]], lty = 2, lwd = 2, col = "red")
+            lines(SPR_list[[v[i]]], lty = 2, lwd = 2, col = "orange")
+    par(mar=c(2,3.5,1,7.3), las=1, mgp=c(2.5,0.5,0), tck=-0.015, xpd = TRUE)
+        plot(hcpue_base, type = "l", ylim = c(0,1), lwd = 2, ylab = "Catch per unit of effort", xlab = "")
+            lines(hcpue_list[[i]], lty = 2, lwd = 2, col = "red")
+            lines(hcpue_list[[v[i]]], lty = 2, lwd = 2, col = "orange")
+    legend("right", inset = c(-0.15,0), legend = c("base","decr. 25%", "incr. 25%"), box.lty = 0, col = c("black","red","orange"), lty = c(1,2,2))
+        plot(prhr_base, type = "l", ylim = c(0,1), lwd = 2, ylab = "Probability of legal harvest", xlab = "")
+            lines(prhr_list[[i]], lty = 2, lwd = 2, col = "red")
+            lines(prhr_list[[v[i]]], lty = 2, lwd = 2, col = "orange")
+    if(plot_export == TRUE) dev.off()
+}
+
