@@ -318,9 +318,9 @@ gc()
     # combine all results to get relative errors
     SPR_base <- SPR[1]; hcpue_base <- hcpue[1]; prhr_base <- pr_hr[1]
     res_mat_scen <- matrix(NA, nrow = 3, ncol = 13) 
-        res_mat_scen[1,] <- sapply(2:14, function(x) (SPR_base-SPR[x])/SPR_base)
-        res_mat_scen[2,] <- sapply(2:14, function(x) (hcpue_base-hcpue[x])/hcpue_base)
-        res_mat_scen[3,] <- sapply(2:14, function(x) (prhr_base-pr_hr[x])/prhr_base)
+        res_mat_scen[1,] <- sapply(2:14, function(x) (SPR[x]-SPR_base)/SPR_base)
+        res_mat_scen[2,] <- sapply(2:14, function(x) (hcpue[x]-hcpue_base)/hcpue_base)
+        res_mat_scen[3,] <- sapply(2:14, function(x) (pr_hr[x]-prhr_base)/prhr_base)
         colnames(res_mat_scen) <- names(scen_str)[2:14]
         rownames(res_mat_scen) <- c("SPR","hcpue","pr_hr")
         res_mat_scen
@@ -345,9 +345,9 @@ gc()
         pr_hr[2] <- 0 # "unfished" scenario
     # combine all results to get relative errors
     res_mat_lowq <- matrix(NA, nrow = 3, ncol = 13) 
-        res_mat_lowq[1,] <- sapply(1:13, function(x) (SPR_base-SPR[x])/SPR_base)
-        res_mat_lowq[2,] <- sapply(1:13, function(x) (hcpue_base-hcpue[x])/hcpue_base)
-        res_mat_lowq[3,] <- sapply(1:13, function(x) (prhr_base-pr_hr[x])/prhr_base)
+        res_mat_lowq[1,] <- sapply(1:13, function(x) (SPR[x]-SPR_base)/SPR_base)
+        res_mat_lowq[2,] <- sapply(1:13, function(x) (hcpue[x]-hcpue_base)/hcpue_base)
+        res_mat_lowq[3,] <- sapply(1:13, function(x) (pr_hr[x]-prhr_base)/prhr_base)
         colnames(res_mat_lowq) <- names(sens_q_low_str)[1:13]
         rownames(res_mat_lowq) <- c("SPR","hcpue","pr_hr")
         res_mat_lowq
@@ -372,9 +372,9 @@ gc()
         pr_hr[2] <- 0 # "unfished" scenario
     # combine all results to get relative errors
     res_mat_highq <- matrix(NA, nrow = 3, ncol = 13) 
-        res_mat_highq[1,] <- sapply(1:13, function(x) (SPR_base-SPR[x])/SPR_base)
-        res_mat_highq[2,] <- sapply(1:13, function(x) (hcpue_base-hcpue[x])/hcpue_base)
-        res_mat_highq[3,] <- sapply(1:13, function(x) (prhr_base-pr_hr[x])/prhr_base)
+        res_mat_highq[1,] <- sapply(1:13, function(x) (SPR[x]-SPR_base)/SPR_base)
+        res_mat_highq[2,] <- sapply(1:13, function(x) (hcpue[x]-hcpue_base)/hcpue_base)
+        res_mat_highq[3,] <- sapply(1:13, function(x) (pr_hr[x]-prhr_base)/prhr_base)
         colnames(res_mat_highq) <- names(sens_q_high_str)[1:13]
         rownames(res_mat_highq) <- c("SPR","hcpue","pr_hr")
         res_mat_highq
@@ -388,42 +388,42 @@ gc()
     plot_export <- TRUE
 
     if(plot_by == "metric"){
-        # regular q
-            if(plot_export == TRUE) tiff(filename=paste0("./Scenario_Figures/2_rel_errors_scen.tiff"),height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
-            par(mar=c(6,3.5,2,1), las=1, mgp=c(2.5,0.5,0), tck=-0.015)
-            barplot(res_mat_scen[,c(1,3:13)], beside = TRUE, ylim = c(-0.3,0.5), las = 2, col = col, ylab = "Relative error", main = "base catchability management scenarios") # removed "unfished" scenario for now
-            legend("topright", legend = c("Eggs/Unfished", "CPUE", "Probability of legal harvest"), fill = col, box.lty = 0)
-            if(plot_export == TRUE) dev.off()
-        # low q
-            if(plot_export == TRUE) tiff(filename=paste0("./Scenario_Figures/2_rel_errors_lowq.tiff"),height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
-            par(mar=c(6,3.5,1,1), las=1, mgp=c(2.5,0.5,0), tck=-0.015)
-            barplot(res_mat_lowq[,c(1,3:13)], beside = TRUE, ylim = c(-0.4,0.5), las = 2, col = col, ylab = "Relative error", main = "low catchability management scenarios") # removed "unfished" scenario for now
-            legend("topright", legend = c("Eggs/Unfished", "CPUE", "Probability of legal harvest"), fill = col, box.lty = 0)
-            if(plot_export == TRUE) dev.off()
-        # high q
-            if(plot_export == TRUE) tiff(filename=paste0("./Scenario_Figures/2_rel_errors_highq.tiff"),height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
-            par(mar=c(6,3.5,1,1), las=1, mgp=c(2.5,0.5,0), tck=-0.015)
-            barplot(res_mat_highq[,c(1,3:13)], beside = TRUE, ylim = c(-0.3,0.6), las = 2, col = col, ylab = "Relative error", main = "high catchability management scenarios") # removed "unfished" scenario for now
-            legend("topright", legend = c("Eggs/Unfished", "CPUE", "Probability of legal harvest"), fill = col, box.lty = 0)
-            if(plot_export == TRUE) dev.off()
+        # # regular q
+        #     if(plot_export == TRUE) tiff(filename=paste0("./Scenario_Figures/2_rel_errors_scen.tiff"),height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
+        #     par(mar=c(6,3.5,2,1), las=1, mgp=c(2.5,0.5,0), tck=-0.015)
+        #     barplot(res_mat_scen[,c(1,3:13)], beside = TRUE, ylim = c(-0.5,0.4), las = 2, col = col, ylab = "Relative error", main = "base catchability management scenarios") # removed "unfished" scenario for now
+        #     legend("topright", legend = c("Eggs/Unfished", "CPUE", "Probability of legal harvest"), fill = col, box.lty = 0)
+        #     if(plot_export == TRUE) dev.off()
+        # # low q
+        #     if(plot_export == TRUE) tiff(filename=paste0("./Scenario_Figures/2_rel_errors_lowq.tiff"),height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
+        #     par(mar=c(6,3.5,1,1), las=1, mgp=c(2.5,0.5,0), tck=-0.015)
+        #     barplot(res_mat_lowq[,c(1,3:13)], beside = TRUE, ylim = c(-0.5,0.4), las = 2, col = col, ylab = "Relative error", main = "low catchability management scenarios") # removed "unfished" scenario for now
+        #     legend("topright", legend = c("Eggs/Unfished", "CPUE", "Probability of legal harvest"), fill = col, box.lty = 0)
+        #     if(plot_export == TRUE) dev.off()
+        # # high q
+        #     if(plot_export == TRUE) tiff(filename=paste0("./Scenario_Figures/2_rel_errors_highq.tiff"),height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
+        #     par(mar=c(6,3.5,1,1), las=1, mgp=c(2.5,0.5,0), tck=-0.015)
+        #     barplot(res_mat_highq[,c(1,3:13)], beside = TRUE, ylim = c(-0.6,0.3), las = 2, col = col, ylab = "Relative error", main = "high catchability management scenarios") # removed "unfished" scenario for now
+        #     legend("topright", legend = c("Eggs/Unfished", "CPUE", "Probability of legal harvest"), fill = col, box.lty = 0)
+        #     if(plot_export == TRUE) dev.off()
     } else {
         # SPR
             if(plot_export == TRUE) tiff(filename=paste0("./Scenario_Figures/1_rel_errors_SPR.tiff"),height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
-            par(mar=c(6,3.5,1,1), las=1, mgp=c(2.5,0.5,0), tck=-0.015)
-            barplot(SPR[,c(1,3:13)], beside = TRUE, ylim = c(-0.3,0.6), las = 2, col = col, ylab = "Relative error", main = "Eggs/Unfished management scenarios") # removed "unfished" scenario for now
-            legend("topright", legend = c("low q", "base q", "high q"), fill = col, box.lty = 0)
+            par(mar=c(6,3.5,1,7), las=1, mgp=c(2.5,0.5,0), tck=-0.015, xpd = TRUE)
+            barplot(SPR[,c(1,3:13)], beside = TRUE, ylim = c(-0.6,0.3), las = 2, col = col, ylab = "Relative error", main = "Eggs/Unfished management scenarios") # removed "unfished" scenario for now
+            legend("right", inset = c(-0.2,0), legend = c("low q", "base q", "high q"), fill = col, box.lty = 0)
             if(plot_export == TRUE) dev.off()
         # hcpue
             if(plot_export == TRUE) tiff(filename=paste0("./Scenario_Figures/1_rel_errors_hcpue.tiff"),height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
-            par(mar=c(6,3.5,1,1), las=1, mgp=c(2.5,0.5,0), tck=-0.015)
-            barplot(hcpue[,c(1,3:13)], beside = TRUE, ylim = c(-0.4,0.5), las = 2, col = col, ylab = "Relative error", main = "Catch per unit of effort management scenarios") # removed "unfished" scenario for now
-            legend("topright", legend = c("low q", "base q", "high q"), fill = col, box.lty = 0)
+            par(mar=c(6,3.5,1,7), las=1, mgp=c(2.5,0.5,0), tck=-0.015, xpd = TRUE)
+            barplot(hcpue[,c(1,3:13)], beside = TRUE, ylim = c(-0.5,0.5), las = 2, col = col, ylab = "Relative error", main = "Catch per unit of effort management scenarios") # removed "unfished" scenario for now
+            legend("right", inset = c(-0.2,0), legend = c("low q", "base q", "high q"), fill = col, box.lty = 0)
             if(plot_export == TRUE) dev.off()
         # pr_hr
             if(plot_export == TRUE) tiff(filename=paste0("./Scenario_Figures/1_rel_errors_prhr.tiff"),height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
-            par(mar=c(6,3.5,1,1), las=1, mgp=c(2.5,0.5,0), tck=-0.015)
+            par(mar=c(6,3.5,1,7), las=1, mgp=c(2.5,0.5,0), tck=-0.015, xpd = TRUE)
             barplot(pr_hr[,c(1,3:13)], beside = TRUE, ylim = c(-0.05,0.05), las = 2, col = col, ylab = "Relative error", main = "Probability of legal harvest management scenarios") # removed "unfished" scenario for now
-            legend("topright", legend = c("low q", "base q", "high q"), fill = col, box.lty = 0)
+            legend("right", inset = c(-0.2,0), legend = c("low q", "base q", "high q"), fill = col, box.lty = 0)
             if(plot_export == TRUE) dev.off()
     }
 
