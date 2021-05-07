@@ -17,7 +17,7 @@ mtext(text="Total Length (mm)", side=2, line=2.5, font=1)
 Wt<-(scenario$life$alw*(TL)^scenario$life$alwb)
 plot(1:18, Wt, ylab="", xaxt="n", las=1, pch=16, cex=1.2, ylim=c(0,30), xlim=c(0.5,18.5))
 mtext(text="Weight (g)", side=2, line=2.5, font=1)
-Mat<-1/(1+exp(-(1:18-scenario$life$amat)/scenario$life$msd))
+Mat<-1/(1+exp(-scenario$life$mgr*(1:18-scenario$life$amat)))
 plot(1:18, Mat, ylab="", xlab="", las=1, pch=16, cex=1.2, ylim=c(0,1), xlim=c(0.5,18.5))
 mtext(text="Proportion Mature", side=2, line=2.5, font=1)
 Ma<-(scenario$life$M*(0.5*scenario$life$vblinf)/TL)^scenario$life$lorenzc
