@@ -37,9 +37,9 @@ scenario <- list(
                                 qmax = .0005,  #Max Catchability (for q varying with VB)
                                 bag_unit = "gallon",   #Bag limit Units_____gallon or numbers
                                 bag = rep(2,12), #Bag limit________rep(2,12) for constant
-                                E_years = seq(1,1,length.out=10)               #Effort over years_________rep(1,10) for constant
+                                E_years = seq(1,1,length.out=25)               #Effort over years_________rep(1,10) for constant
                                 ), 
-                  sim = list(month = 120)                                      #Simulation length, number of months
+                  sim = list(month = 300)                                      #Simulation length, number of months
                   )
 sh2gal <- function(sh){
   (-6.704*sh + 480.96)/2
