@@ -99,6 +99,7 @@ scallop_model_fun <- function(scenario){
   #switch for bag limit units
   scenario$catch <- within(scenario$catch,{
     if(bag_unit=='gallon'){
+      require(truncnorm)
       maxcat <- bag*2.5                                               #theoretical max anyone can catch 
       catch.rate <- lapply(maxcat, function(x) seq(0,x,by=0.01))
       ret <- lapply(1:12, function(x) pmin(catch.rate[[x]],bag[x]))   #how many can be retained for every individual option of numbers caught
@@ -182,34 +183,43 @@ scallop_model_fun <- function(scenario){
     # hr[i] <- 1-exp(-qt[i]*et[i])
     F_init <- qt[i]*et[i]*scenario$life.vec$Vul
     
-    if(scenario$catch$bag_unit=="gallon"){
-      scal_gal <- (nage[i,]/sh2gal(scenario$life.vec$TL))
-      Z_init <- F_init+scenario$life.vec$M
-      catch_base <- (F_init/Z_init)*(1-exp(-Z_init))*scal_gal
-      #using a half-normal truncated at zero to get the density of 
-      hcpue[i] <- sum(catch_base)/et[i] #expected catch rate of harvestable fish
-      hcpue[i] <- ifelse(is.nan(hcpue[i]),0,hcpue[i])  #div0 trap for effort = 0
-      dens.catch <- dtruncnorm(scenario$catch$catch.rate[[timer[i]]], a=0, mean=hcpue[i], sd=hcpue[i]*0.4)
-      dens.catch <- dens.catch/sum(dens.catch)                       #need to sum to 1 to prevent loss from density range
-      hpue[i] <- sum(dens.catch*scenario$catch$ret[[timer[i]]])      #Expected catch rate of scallops under the bag limit
-    }else{
-      Z_init <- F_init+scenario$life.vec$M
-      catch_base <- (F_init/Z_init)*(1-exp(-Z_init))*nage[i,]
-      hcpue[i] <- sum(catch_base)/et[i]                                    #Expected catch rate of harvestable fish
-      hcpue[i] <- ifelse(is.nan(hcpue[i]),0,hcpue[i])                      #div0 trap for effort = 0
-      dens.catch <- dpois(scenario$catch$catch.rate[[timer[i]]],hcpue[i])
-      dens.catch <- dens.catch/sum(dens.catch)                             #need to sum to 1 to prevent loss from density range
-      hpue[i] <- sum(dens.catch*scenario$catch$ret[[timer[i]]])            #Expected catch rate of scallops under the bag limit
-    }
-    #NEWTON-RAPHSON Iterations to adjust q such that the catch rate equals what would be expected under the bag
-    if(hpue[i] < hcpue[i]){                          #If the catch rate under the bag is lower than the unregulated catch rate, then do newt-raph
-      #New adjusted q for bag limit using Newton-Raphson
-      qt[i]<-exp( uniroot(f = function(lq) {   #Finding a new q that will make catch rate equal to the expected catch rate under the bag
-         hpue[i] - sum(((exp(lq)*et[i]*scenario$life.vec$Vul)/((exp(lq)*et[i]*scenario$life.vec$Vul)+scenario$life.vec$M)) * nage[i,] * (1-exp(-((exp(lq)*et[i]*scenario$life.vec$Vul)+scenario$life.vec$M)))) /  et[i]    # Baranov/Effort
-      }, lower=-20, upper=0, extendInt="yes")$root )
+    if(et[i]>0){
+      if(scenario$catch$bag_unit=="gallon"){
+        scal_gal <- (nage[i,]/sh2gal(scenario$life.vec$TL))
+        Z_init <- F_init+scenario$life.vec$M
+        catch_base <- (F_init/Z_init)*(1-exp(-Z_init))*scal_gal
+        #using a half-normal truncated at zero to get the density of 
+        hcpue[i] <- sum(catch_base)/et[i] #expected catch rate of harvestable fish
+        hcpue[i] <- ifelse(is.nan(hcpue[i]),0,hcpue[i])  #div0 trap for effort = 0
+        dens.catch <- dtruncnorm(scenario$catch$catch.rate[[timer[i]]], a=0, mean=hcpue[i], sd=hcpue[i]*0.4)
+        dens.catch <- dens.catch/sum(dens.catch)                       #need to sum to 1 to prevent loss from density range
+        hpue[i] <- sum(dens.catch*scenario$catch$ret[[timer[i]]])      #Expected catch rate of scallops under the bag limit
+        #NEWTON-RAPHSON Iterations to adjust q such that the catch rate equals what would be expected under the bag
+        if(hpue[i] < hcpue[i]){                          #If the catch rate under the bag is lower than the unregulated catch rate, then do newt-raph
+          #New adjusted q for bag limit using Newton-Raphson
+          qt[i] <- exp( uniroot(f = function(lq) {   #Finding a new q that will make catch rate equal to the expected catch rate under the bag
+             hpue[i] - sum(((exp(lq)*et[i]*scenario$life.vec$Vul)/((exp(lq)*et[i]*scenario$life.vec$Vul)+scenario$life.vec$M)) * scal_gal * (1-exp(-((exp(lq)*et[i]*scenario$life.vec$Vul)+scenario$life.vec$M)))) /  et[i]    # Baranov/Effort
+          }, lower=-20, upper=0, extendInt="yes")$root )
+        }
+      }else{
+        Z_init <- F_init+scenario$life.vec$M
+        catch_base <- (F_init/Z_init)*(1-exp(-Z_init))*nage[i,]
+        hcpue[i] <- sum(catch_base)/et[i]                                    #Expected catch rate of harvestable fish
+        hcpue[i] <- ifelse(is.nan(hcpue[i]),0,hcpue[i])                      #div0 trap for effort = 0
+        dens.catch <- dpois(scenario$catch$catch.rate[[timer[i]]],hcpue[i])
+        dens.catch <- dens.catch/sum(dens.catch)                             #need to sum to 1 to prevent loss from density range
+        hpue[i] <- sum(dens.catch*scenario$catch$ret[[timer[i]]])            #Expected catch rate of scallops under the bag limit
+        #NEWTON-RAPHSON Iterations to adjust q such that the catch rate equals what would be expected under the bag
+        if(hpue[i] < hcpue[i]){                          #If the catch rate under the bag is lower than the unregulated catch rate, then do newt-raph
+          #New adjusted q for bag limit using Newton-Raphson
+          qt[i]<-exp( uniroot(f = function(lq) {   #Finding a new q that will make catch rate equal to the expected catch rate under the bag
+             hpue[i] - sum(((exp(lq)*et[i]*scenario$life.vec$Vul)/((exp(lq)*et[i]*scenario$life.vec$Vul)+scenario$life.vec$M)) * nage[i,] * (1-exp(-((exp(lq)*et[i]*scenario$life.vec$Vul)+scenario$life.vec$M)))) /  et[i]    # Baranov/Effort
+          }, lower=-20, upper=0, extendInt="yes")$root )
+        }
+      }
     }
     #Mortality
-    F_harv[i,]<-qt[i]*et[i]*scenario$life.vec$Vul                    #Fishing mortality
+    F_harv[i,] <- qt[i]*et[i]*scenario$life.vec$Vul                    #Fishing mortality
     Z[i,] <- F_harv[i,]+scenario$life.vec$M                          #Total mortality
     #advance from all mortality sources (kill all oldest scallops)
     if(i!=months) nage[i+1,2:amax] <- nage[i,1:(amax-1)] * exp(-Z[i,1:(amax-1)])
@@ -244,28 +254,27 @@ scallop_model_fun <- function(scenario){
                                    qt = qt,
                                    hcpue = hcpue,
                                    hpue = hpue,
-                                   hr = hr,
-                                   pr_hr = pr_hr),
+                                   hr = hr),
                 matrix = list(nage = nage,
-                              hr_harv = hr_harv))
+                              F_harv = F_harv))
   return(ret.l)
 }
 ###-----------------------------------------------------
 #    Run
 ###-----------------------------------------------------
-# run1 <- scallop_model_fun(scenario)
+run1 <- scallop_model_fun(scenario)
 
-# #Simple plot of VB, effort
-#   with(run1$results,{
-#       par(mfrow=c(3,1), mar=c(3,5,1,1), las=1, mgp=c(4,1,0))
-#       plot(time, VB, type="l", col="blue", 
-#            lwd=3, ylim=c(0, max(VB)))
-#       abline(lm(VB~time), lwd=2, lty=3)
-#       et2 <- et
-#       et2[et2==0] <- NA
-#       plot(time, et2, col="red", lwd=3, type='l', 
-#            ylim=c(0,max(et2,na.rm=T)), ylab="Effort")
-#       plot(time, recruits, type='l')
-#   })
+#Simple plot of VB, effort
+  with(run1$results,{
+      par(mfrow=c(3,1), mar=c(3,5,1,1), las=1, mgp=c(4,1,0))
+      plot(time, VB, type="l", col="blue", 
+           lwd=3, ylim=c(0, max(VB)))
+      abline(lm(VB~time), lwd=2, lty=3)
+      et2 <- et
+      et2[et2==0] <- NA
+      plot(time, et2, col="red", lwd=3, type='l', 
+           ylim=c(0,max(et2,na.rm=T)), ylab="Effort")
+      plot(time, recruits, type='l')
+  })
 
 
