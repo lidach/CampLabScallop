@@ -1,13 +1,14 @@
 #######################################
 #Scenarios
 #######################################
-source("scallop_model_fun.R")
+source("scallop_model_fun_Baranov.R")
 
 scen_str <- list()
 
 # base model
 
 scen_str$base <- scallop_model_fun(scenario)
+scen_str$base$scenario$per.rec$spr # ~74%
 
 
 # bag limit = 3
@@ -83,7 +84,7 @@ scen_str$base <- scallop_model_fun(scenario)
 ##################
 sens_str <- list()
 perchange <- 0.25 # +/- 25%
-# changes in catchability - look at hcpue and pr_hr
+# changes in catchability - look at hcpue and hr
     senscen_q1 <- scenario
     senscen_q2 <- scenario
     senscen_q1$catch$q <- scenario$catch$q*(1-perchange)
@@ -126,8 +127,8 @@ perchange <- 0.25 # +/- 25%
 
 ##################################
 ## run mgmt scenarios with 
-    perchange1 <- 0.25
-    perchange2 <- 0.75
+    perchange1 <- 1.6 # ~50% SPR
+    perchange2 <- 3.8 # ~35% SPR
     
     sens_q_low_str <- list()
     scenario1$catch$q <- scenario$catch$q*(1+perchange1)
@@ -319,20 +320,20 @@ gc()
         for(i in 1:14) hcpue_list[[i]][hcpue_list[[i]] == 0] <- NA
         hcpue <- sapply(1:14, function(x) colMeans(hcpue_list[[x]], na.rm = TRUE))
         hcpue <- sapply(1:14, function(x) mean(hcpue[21:25,x]))    
-    # pr_hr (open montths, last 5 years)
-        prhr_list <- lapply(1:14, function(x) matrix(scen_str[[x]]$results$pr_hr, nrow = 12, ncol = 25))
-        for(i in 1:14) prhr_list[[i]][prhr_list[[i]] == 0] <- NA
-        pr_hr <- sapply(1:14, function(x) colMeans(prhr_list[[x]], na.rm = TRUE))
-        pr_hr <- sapply(1:14, function(x) mean(pr_hr[21:25, x])) 
-        pr_hr[3] <- 0 # "unfished" scenario
+    # hr (open montths, last 5 years)
+       hr_list <- lapply(1:14, function(x) matrix(scen_str[[x]]$results$hr, nrow = 12, ncol = 25))
+        for(i in 1:14) hr_list[[i]][hr_list[[i]] == 0] <- NA
+        hr <- sapply(1:14, function(x) colMeans(hr_list[[x]], na.rm = TRUE))
+        hr <- sapply(1:14, function(x) mean(hr[21:25, x])) 
+        hr[3] <- 0 # "unfished" scenario
     # combine all results to get relative errors
-    SPR_base <- SPR[1]; hcpue_base <- hcpue[1]; prhr_base <- pr_hr[1]
+    SPR_base <- SPR[1]; hcpue_base <- hcpue[1]; hr_base <- hr[1]
     res_mat_scen <- matrix(NA, nrow = 3, ncol = 13) 
         res_mat_scen[1,] <- sapply(2:14, function(x) (SPR[x]-SPR_base)/SPR_base)
         res_mat_scen[2,] <- sapply(2:14, function(x) (hcpue[x]-hcpue_base)/hcpue_base)
-        res_mat_scen[3,] <- sapply(2:14, function(x) (pr_hr[x]-prhr_base)/prhr_base)
+        res_mat_scen[3,] <- sapply(2:14, function(x) (hr[x]-hr_base)/hr_base)
         colnames(res_mat_scen) <- names(scen_str)[2:14]
-        rownames(res_mat_scen) <- c("SPR","hcpue","pr_hr")
+        rownames(res_mat_scen) <- c("SPR","hcpue","hr")
         res_mat_scen
 
 ## low q scenarios
@@ -347,19 +348,19 @@ gc()
         for(i in 1:13) hcpue_list[[i]][hcpue_list[[i]] == 0] <- NA
         hcpue <- sapply(1:13, function(x) colMeans(hcpue_list[[x]], na.rm = TRUE))
         hcpue <- sapply(1:13, function(x) mean(hcpue[21:25,x]))    
-    # pr_hr (open montths, last 5 years)
-        prhr_list <- lapply(1:13, function(x) matrix(sens_q_low_str[[x]]$results$pr_hr, nrow = 12, ncol = 25))
-        for(i in 1:13) prhr_list[[i]][prhr_list[[i]] == 0] <- NA
-        pr_hr <- sapply(1:13, function(x) colMeans(prhr_list[[x]], na.rm = TRUE))
-        pr_hr <- sapply(1:13, function(x) mean(pr_hr[21:25, x])) 
-        pr_hr[2] <- 0 # "unfished" scenario
+    # hr (open montths, last 5 years)
+        hr_list <- lapply(1:13, function(x) matrix(sens_q_low_str[[x]]$results$hr, nrow = 12, ncol = 25))
+        for(i in 1:13) hr_list[[i]][hr_list[[i]] == 0] <- NA
+        hr <- sapply(1:13, function(x) colMeans(hr_list[[x]], na.rm = TRUE))
+        hr <- sapply(1:13, function(x) mean(hr[21:25, x])) 
+        hr[2] <- 0 # "unfished" scenario
     # combine all results to get relative errors
     res_mat_lowq <- matrix(NA, nrow = 3, ncol = 13) 
         res_mat_lowq[1,] <- sapply(1:13, function(x) (SPR[x]-SPR_base)/SPR_base)
         res_mat_lowq[2,] <- sapply(1:13, function(x) (hcpue[x]-hcpue_base)/hcpue_base)
-        res_mat_lowq[3,] <- sapply(1:13, function(x) (pr_hr[x]-prhr_base)/prhr_base)
+        res_mat_lowq[3,] <- sapply(1:13, function(x) (hr[x]-hr_base)/hr_base)
         colnames(res_mat_lowq) <- names(sens_q_low_str)[1:13]
-        rownames(res_mat_lowq) <- c("SPR","hcpue","pr_hr")
+        rownames(res_mat_lowq) <- c("SPR","hcpue","hr")
         res_mat_lowq
 
 ## high q scenarios
@@ -374,49 +375,34 @@ gc()
         for(i in 1:13) hcpue_list[[i]][hcpue_list[[i]] == 0] <- NA
         hcpue <- sapply(1:13, function(x) colMeans(hcpue_list[[x]], na.rm = TRUE))
         hcpue <- sapply(1:13, function(x) mean(hcpue[21:25,x]))    
-    # pr_hr (open montths, last 5 years)
-        prhr_list <- lapply(1:13, function(x) matrix(sens_q_high_str[[x]]$results$pr_hr, nrow = 12, ncol = 25))
-        for(i in 1:13) prhr_list[[i]][prhr_list[[i]] == 0] <- NA
-        pr_hr <- sapply(1:13, function(x) colMeans(prhr_list[[x]], na.rm = TRUE))
-        pr_hr <- sapply(1:13, function(x) mean(pr_hr[21:25, x])) 
-        pr_hr[2] <- 0 # "unfished" scenario
+    # hr (open montths, last 5 years)
+        hr_list <- lapply(1:13, function(x) matrix(sens_q_high_str[[x]]$results$hr, nrow = 12, ncol = 25))
+        for(i in 1:13) hr_list[[i]][hr_list[[i]] == 0] <- NA
+        hr <- sapply(1:13, function(x) colMeans(hr_list[[x]], na.rm = TRUE))
+        hr <- sapply(1:13, function(x) mean(hr[21:25, x])) 
+        hr[2] <- 0 # "unfished" scenario
     # combine all results to get relative errors
     res_mat_highq <- matrix(NA, nrow = 3, ncol = 13) 
         res_mat_highq[1,] <- sapply(1:13, function(x) (SPR[x]-SPR_base)/SPR_base)
         res_mat_highq[2,] <- sapply(1:13, function(x) (hcpue[x]-hcpue_base)/hcpue_base)
-        res_mat_highq[3,] <- sapply(1:13, function(x) (pr_hr[x]-prhr_base)/prhr_base)
+        res_mat_highq[3,] <- sapply(1:13, function(x) (hr[x]-hr_base)/hr_base)
         colnames(res_mat_highq) <- names(sens_q_high_str)[1:13]
-        rownames(res_mat_highq) <- c("SPR","hcpue","pr_hr")
+        rownames(res_mat_highq) <- c("SPR","hcpue","hr")
         res_mat_highq
 
 ## plots
-    col <- c("#009999", "#0000FF","#104E8B")
     SPR <- t(cbind(res_mat_scen[1,], res_mat_lowq[1,], res_mat_highq[1,]))
     hcpue <- t(cbind(res_mat_scen[2,], res_mat_lowq[2,], res_mat_highq[2,]))
-    pr_hr <- t(cbind(res_mat_scen[3,], res_mat_lowq[3,], res_mat_highq[3,]))
-    plot_export <- TRUE
+    hr <- t(cbind(res_mat_scen[3,], res_mat_lowq[3,], res_mat_highq[3,]))
+    bar_res <- list(Eggs = SPR,
+                    hcpue = hcpue,
+                    hr = hr)
+    save(bar_res, file = "./Results_RData/rel_change_plots.RData")
+    save(scen_str, sens_str, sens_q_low_str, sens_q_high_str,
+     file = "./Results_RData/scenario_sensitivity_storage.RData")
 
-    # SPR
-        if(plot_export == TRUE) tiff(filename=paste0("./Scenario_Figures/1_rel_errors_SPR.tiff"),height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
-        par(mar=c(6,3.5,1,7), las=1, mgp=c(2.5,0.5,0), tck=-0.015, xpd = TRUE)
-        barplot(SPR[,c(1,3:13)], beside = TRUE, ylim = c(min(SPR[,c(1,3:13)])-0.1, max(SPR[,c(1,3:13)])+0.1), las = 2, col = col, ylab = "Relative error", main = "Eggs/Unfished management scenarios") # removed "unfished" scenario for now
-        legend("right", inset = c(-0.2,0), legend = c("base q", "incr. 25%", "incr. 75%"), fill = col, box.lty = 0)
-        if(plot_export == TRUE) dev.off()
-    # hcpue
-        if(plot_export == TRUE) tiff(filename=paste0("./Scenario_Figures/1_rel_errors_hcpue.tiff"),height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
-        par(mar=c(6,3.5,1,7), las=1, mgp=c(2.5,0.5,0), tck=-0.015, xpd = TRUE)
-        barplot(hcpue[,c(1,3:13)], beside = TRUE, ylim = c(min(hcpue[,c(1,3:13)])-0.1, max(hcpue[,c(1,3:13)])+0.1), las = 2, col = col, ylab = "Relative error", main = "Catch per unit of effort management scenarios") # removed "unfished" scenario for now
-        legend("right", inset = c(-0.2,0), legend = c("base q", "incr. 25%", "incr. 75%"), fill = col, box.lty = 0)
-        if(plot_export == TRUE) dev.off()
-    # pr_hr
-        if(plot_export == TRUE) tiff(filename=paste0("./Scenario_Figures/1_rel_errors_prhr.tiff"),height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
-        par(mar=c(6,3.5,1,7), las=1, mgp=c(2.5,0.5,0), tck=-0.015, xpd = TRUE)
-        barplot(pr_hr[,c(1,3:13)], beside = TRUE, ylim = c(min(pr_hr[,c(1,3:13)])-0.1, max(pr_hr[,c(1,3:13)])+0.1), las = 2, col = col, ylab = "Relative error", main = "Probability of legal harvest management scenarios") # removed "unfished" scenario for now
-        legend("right", inset = c(-0.2,0), legend = c("base q", "incr. 25%", "incr. 75%"), fill = col, box.lty = 0)
-        if(plot_export == TRUE) dev.off()
-
-rm(list=setdiff(ls(), c("scen_str","sens_q_low_str","sens_q_high_str","sens_str")))
-gc()   
+# rm(list=setdiff(ls(), c("scen_str","sens_q_low_str","sens_q_high_str","sens_str")))
+# gc()   
 
 ##################################
 ## sensitivity analysis plots
@@ -433,13 +419,13 @@ gc()
     hcpue_list <- lapply(1:10, function(x) matrix(sens_str[[x]]$results$hcpue, nrow = 12, ncol = 25))
         for(i in 1:10) hcpue_list[[i]][hcpue_list[[i]] == 0] <- NA
         hcpue_list <- lapply(1:10, function(x) colMeans(hcpue_list[[x]], na.rm = TRUE))
-## pr_hr - average per open season
-    prhr_base <- matrix(scen_str$base$results$pr_hr, nrow = 12, ncol = 25)
-        prhr_base[prhr_base == 0] <- NA
-        prhr_base <- colMeans(prhr_base, na.rm = TRUE)
-    prhr_list <- lapply(1:10, function(x) matrix(sens_str[[x]]$results$pr_hr, nrow = 12, ncol = 25))
-        for(i in 1:10) prhr_list[[i]][prhr_list[[i]] == 0] <- NA
-        prhr_list <- lapply(1:10, function(x) colMeans(prhr_list[[x]], na.rm = TRUE))
+## hr - average per open season
+    hr_base <- matrix(scen_str$base$results$hr, nrow = 12, ncol = 25)
+        hr_base[hr_base == 0] <- NA
+        hr_base <- colMeans(hr_base, na.rm = TRUE)
+    hr_list <- lapply(1:10, function(x) matrix(sens_str[[x]]$results$hr, nrow = 12, ncol = 25))
+        for(i in 1:10) hr_list[[i]][hr_list[[i]] == 0] <- NA
+        hr_list <- lapply(1:10, function(x) colMeans(hr_list[[x]], na.rm = TRUE))
 
 ## plots
 plot_export <- TRUE
@@ -459,9 +445,8 @@ for(i in 1:5){
             lines(hcpue_list[[v[i]]], lty = 2, lwd = 2, col = "red")
             lines(hcpue_list[[y[i]]], lty = 2, lwd = 2, col = "orange")
     legend("right", inset = c(-0.15,0), legend = c("base","decr. 25%", "incr. 25%"), box.lty = 0, col = c("black","red","orange"), lty = c(1,2,2))
-        plot(prhr_base, type = "l", ylim = c(0,1), lwd = 2, ylab = "Probability of legal harvest", xlab = "")
-            lines(prhr_list[[v[i]]], lty = 2, lwd = 2, col = "red")
-            lines(prhr_list[[y[i]]], lty = 2, lwd = 2, col = "orange")
+        plot(hr_base, type = "l", ylim = c(0,1), lwd = 2, ylab = "Harvest rate", xlab = "")
+            lines(hr_list[[v[i]]], lty = 2, lwd = 2, col = "red")
+            lines(hr_list[[y[i]]], lty = 2, lwd = 2, col = "orange")
     if(plot_export == TRUE) dev.off()
 }
-

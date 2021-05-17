@@ -262,19 +262,19 @@ scallop_model_fun <- function(scenario){
 ###-----------------------------------------------------
 #    Run
 ###-----------------------------------------------------
-run1 <- scallop_model_fun(scenario)
+# run1 <- scallop_model_fun(scenario)
 
-#Simple plot of VB, effort
-  with(run1$results,{
-      par(mfrow=c(3,1), mar=c(3,5,1,1), las=1, mgp=c(4,1,0))
-      plot(time, VB, type="l", col="blue", 
-           lwd=3, ylim=c(0, max(VB)))
-      abline(lm(VB~time), lwd=2, lty=3)
-      et2 <- et
-      et2[et2==0] <- NA
-      plot(time, et2, col="red", lwd=3, type='l', 
-           ylim=c(0,max(et2,na.rm=T)), ylab="Effort")
-      plot(time, recruits, type='l')
-  })
+# #Simple plot of VB, effort
+#   with(run1$results,{
+#       par(mfrow=c(3,1), mar=c(3,5,1,1), las=1, mgp=c(4,1,0))
+#       plot(time, VB, type="l", col="blue", 
+#            lwd=3, ylim=c(0, max(VB)))
+#       abline(lm(VB~time), lwd=2, lty=3)
+#       et2 <- et
+#       et2[et2==0] <- NA
+#       plot(time, et2, col="red", lwd=3, type='l', 
+#            ylim=c(0,max(et2,na.rm=T)), ylab="Effort")
+#       plot(time, recruits, type='l')
+#   })
 
 
