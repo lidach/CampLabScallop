@@ -9,7 +9,7 @@
 source("scallop_model_fun.R")
 
 #Remember to switch file name to your path to Figures folder in Dropbox
-path_name <- "C:/Users/nfisch/Dropbox/Lab Scallops/Scallop MS/Figures"
+# path_name <- "C:/Users/nfisch/Dropbox/Lab Scallops/Scallop MS/Figures"
 
 #tiff(filename=paste0(path_name,"/4x4LH.tiff"),height = 17, width = 20, units = 'cm', compression = "lzw", res = 500)
 par(mfrow=c(2,2), mar=c(2,4,1,1), oma=c(3,3,1,1))
@@ -36,32 +36,69 @@ mtext(text="Age", side=1, line=3, at=-4, font=2)
 # relative change bar plots
 # names for x lab for each scenario
 load("./Results_RData/rel_change_plots.Rdata")
-scen_names <- c("bag = 3", "incr. eff., +1 \nseason back", "same eff., +1 \nseason back", "incr., eff. +1 \nseason front", "same eff., +1 \nseason front",
-                "season \nforward", "season back", "double eff.", "triple eff.", "rolling bag", "rolling bag \n+season back", "semelparity")
-col <- c("#009999", "#0000FF","#104E8B")
+scen_names <- c("bag = 3", "incr. eff., \n+1 season back", "same eff., \n+1 season back", "incr., eff. \n+1 season front", "same eff., \n+1 season front",
+                "season forward", "season back", "rolling bag", "rolling bag \n+season back", "semelparity")
+# col <- c("#009999", "#0000FF","#104E8B")
+col <- grDevices::cm.colors(length(scen_names))
+m <- matrix(c(1,2,3,4,5,6,7,8,9,10,10,10), nrow = 4, ncol = 3, byrow = TRUE)
+legend_order <- matrix(1:10, nrow = 2, byrow = TRUE)
+SPR_names <- c("SPR = 74%", "SPR = 50%", "SPR = 35%")
+Et_names <- c("base effort", NA,NA,"double effort",NA,NA, "triple effort")
 
 with(bar_res,{
-	# SPR
-    # tiff(filename=paste0(path_name,"/1_rel_errors_SPR.tiff"),height = 14, width = 25, units = 'cm', compression = "lzw", res = 500)
-    par(mar=c(6,3.5,1,7), las=1, mgp=c(2.5,0.5,0), tck=-0.015, xpd = TRUE)
-    barplot(Eggs[,c(1,3:13)], beside = TRUE, ylim = c(min(Eggs[,c(1,3:13)])-0.1, max(Eggs[,c(1,3:13)])+0.1), las = 2, col = col, ylab = "Relative change", main = "Eggs/Unfished management scenarios", names = scen_names) # removed "unfished" scenario for now
-    legend("right", inset = c(-0.15,0), legend = c("SPR = 74%", "SPR = 50%", "SPR = 35%"), fill = col, box.lty = 0)
-    # dev.off()
-	
-	# hcpue
-    # tiff(filename="C:/Users/nfisch/Dropbox/Lab Scallops/Scallop MS/Figures/1_rel_errors_hcpue.tiff",height = 14, width = 25, units = 'cm', compression = "lzw", res = 500)
-    par(mar=c(6,3.5,1,7), las=1, mgp=c(2.5,0.5,0), tck=-0.015, xpd = TRUE)
-    barplot(hcpue[,c(1,3:13)], beside = TRUE, ylim = c(min(hcpue[,c(1,3:13)])-0.1, max(hcpue[,c(1,3:13)])+0.1), las = 2, col = col, ylab = "Relative change", main = "Catch per unit of effort management scenarios", names = scen_names) # removed "unfished" scenario for now
-    legend("right", inset = c(-0.15,0), legend = c("SPR = 74%", "SPR = 50%", "SPR = 35%"), fill = col, box.lty = 0)
-    # dev.off()
-	
-	# hr
-    # tiff(filename=paste0(path_name,"/1_rel_errors_hr.tiff"),height = 14, width = 25, units = 'cm', compression = "lzw", res = 500)
-    par(mar=c(6,3.5,1,7), las=1, mgp=c(2.5,0.5,0), tck=-0.015, xpd = TRUE)
-    barplot(hr[,c(1,3:13)], beside = TRUE, ylim = c(min(hr[,c(1,3:13)])-0.1, max(hr[,c(1,3:13)])+0.1), las = 2, col = col, ylab = "Relative change", main = "Harvest rate management scenarios", names = scen_names) # removed "unfished" scenario for now
-    legend("right", inset = c(-0.15,0), legend = c("SPR = 74%", "SPR = 50%", "SPR = 35%"), fill = col, box.lty = 0)
-    # dev.off()
+    tiff(filename=paste0(path_name,"/1_rel_errors_SPR.tiff"),height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
+    layout(mat = m, heights = c(0.4,0.4,0.4,0.2))
+    for(i in 1:9){
+      if(i %in% c(1,4,7)) par(mar = c(0,3.2,2.2,0))
+      if(i %in% c(2,3,5,6,8,9)) par(mar = c(0,1,2.2,1))
+      barplot(Eggs[i,c(1,3:11)], axes = FALSE, ylim = c(min(Eggs[,c(1,3:11)])-0.1, max(Eggs[,c(1,3:11)])+0.1), las = 2, col = col) # removed "unfished" scenario for now
+      mtext(letters[i], side = 3, line = -1, adj = 0.1, cex = 0.6, col = "grey60")
+      if(i %in% c(1,4,7)){
+        axis(2, at = seq(floor(min(Eggs)),ceiling(max(Eggs)),0.5))
+        title(ylab = Et_names[i], line = 2)
+      }
+      if(i %in% c(1,2,3)) title(main = SPR_names[i], font.main = 1)
+    }
+    plot(1, type ="n", axes = FALSE, xlab ="", ylab ="")
+    legend("top", legend = scen_names[legend_order], fill = col[legend_order], cex = 0.9, bty = "n", ncol = 5)
+    dev.off()
+
+    tiff(filename=paste0(path_name,"/1_rel_errors_hcpue.tiff"),height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
+    layout(mat = m, heights = c(0.4,0.4,0.4,0.2))
+    for(i in 1:9){
+      if(i %in% c(1,4,7)) par(mar = c(0,3.2,2.2,0))
+      if(i %in% c(2,3,5,6,8,9)) par(mar = c(0,1,2.2,1))
+      barplot(hcpue[i,c(1,3:11)], axes = FALSE, ylim = c(min(hcpue[,c(1,3:11)])-0.1, max(hcpue[,c(1,3:11)])+0.1), las = 2, col = col)
+      mtext(letters[i], side = 3, line = -1, adj = 0.1, cex = 0.6, col = "grey60")
+      if(i %in% c(1,4,7)){
+        axis(2, at = seq(floor(min(hcpue)),ceiling(max(hcpue)),0.5))
+        title(ylab = Et_names[i], line = 2)
+      }
+      if(i %in% c(1,2,3)) title(main = SPR_names[i], font.main = 1)
+    }
+    plot(1, type ="n", axes = FALSE, xlab ="", ylab ="")
+    legend("top", legend = scen_names[legend_order], fill = col[legend_order], cex = 0.9, bty = "n", ncol = 5)
+    dev.off()
+
+    tiff(filename=paste0(path_name,"/1_rel_errors_hr.tiff"),height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
+    layout(mat = m, heights = c(0.4,0.4,0.4,0.2))
+    for(i in 1:9){
+      if(i %in% c(1,4,7)) par(mar = c(0,3.2,2.2,0))
+      if(i %in% c(2,3,5,6,8,9)) par(mar = c(0,1,2.2,1))
+      barplot(hr[i,c(1,3:11)], axes = FALSE, ylim = c(min(hr[,c(1,3:11)])-0.1, max(hr[,c(1,3:11)])+0.1), las = 2, col = col)
+      mtext(letters[i], side = 3, line = -1, adj = 0.1, cex = 0.6, col = "grey60")
+       if(i %in% c(1,4,7)){
+        axis(2, at = seq(floor(min(hr)),ceiling(max(hr)),0.5))
+        title(ylab = Et_names[i], line = 2)
+      }
+      if(i %in% c(1,2,3)) title(main = SPR_names[i], font.main = 1)
+    }
+    plot(1, type ="n", axes = FALSE, xlab ="", ylab ="")
+    legend("top", legend = scen_names[legend_order], fill = col[legend_order], cex = 0.9, bty = "n", ncol = 5)
+    dev.off()
 })
+
+
 
 # base result time series
 #this function helps do scientific notation without the e+XX stuff
@@ -84,12 +121,12 @@ sci.transl <- function(range){
 
 load("./Results_RData/scenario_sensitivity_storage.Rdata")
 #grab the global ranges for dynamic settings
+scen_str <- scen_str_all[[1]]
 vb.r <- range(sapply(scen_str,function(x)range(x$results$VB,na.rm=T)))
 et.r <- range(sapply(scen_str,function(x)range(x$results$et,na.rm=T)))
 yield.r <- range(sapply(scen_str,function(x)range(x$results$yield_n,na.rm=T)))
 rec.r <- range(sapply(scen_str,function(x)range(x$results$recruits,na.rm=T)))
 eggs.r <- range(sapply(scen_str,function(x)range(x$results$eggs_mon,na.rm=T)))
-
 
 # tiff(filename="C:/Users/nfisch/Dropbox/Lab Scallops/Scallop MS/Figures/scenario_base_results.tiff",height = 17, width = 23, units = 'cm', compression = "lzw", res = 500)
 with(scen_str[[1]]$results,{

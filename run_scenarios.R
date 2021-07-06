@@ -6,10 +6,8 @@ source("scallop_model_fun_Baranov.R")
 scen_str <- list()
 
 # base model
-
 scen_str$base <- scallop_model_fun(scenario)
 scen_str$base$scenario$per.rec$spr # ~74%
-
 
 # bag limit = 3
     scenario1 <- scenario
@@ -53,31 +51,21 @@ scen_str$base$scenario$per.rec$spr # ~74%
     scenario8$catch$E_open <- c(0,0,0,0,0,1,1,1,0,0,0,0)
     scen_str$scen8 <- scallop_model_fun(scenario8)
 
-# effort - increasing between years (doubling over 25 years)
+# rolling bag limit - increasing
     scenario9 <- scenario
-    scenario9$catch$E_years <- seq(1,2,length.out=25)
+    scenario9$catch$bag <- c(1,1,1,1,1,1,0.5,1,1.5,2,2,2)
     scen_str$scen9 <- scallop_model_fun(scenario9)
 
-# effort - increasing between years (tripling over 25 years)
+# rolling bag and season start - back one month
     scenario10 <- scenario
-    scenario10$catch$E_years <- seq(1,3,length.out=25)
+    scenario10$catch$bag <- c(1,1,1,1,1,1,1,0.5,1,1.5,2,2)
+    scenario10$catch$E_open <- c(0,0,0,0,0,0,0,1,1,1,0,0)
     scen_str$scen10 <- scallop_model_fun(scenario10)
 
-# rolling bag limit - increasing
-    scenario11 <- scenario
-    scenario11$catch$bag <- c(1,1,1,1,1,1,0.5,1,1.5,2,2,2)
-    scen_str$scen11 <- scallop_model_fun(scenario11)
-
-# rolling bag and season start - back one month
-    scenario12 <- scenario
-    scenario12$catch$bag <- c(1,1,1,1,1,1,1,0.5,1,1.5,2,2)
-    scenario12$catch$E_open <- c(0,0,0,0,0,0,0,1,1,1,0,0)
-    scen_str$scen12 <- scallop_model_fun(scenario12)
-
 # semelparity
-    scenario13 <- scenario
-    scenario13$life$semelparous <- TRUE
-    scen_str$scen13 <- scallop_model_fun(scenario13)
+    scenario11 <- scenario
+    scenario11$life$semelparous <- TRUE
+    scen_str$scen11 <- scallop_model_fun(scenario11)
 
 ##################
 # sensitivity runs
@@ -126,73 +114,258 @@ perchange <- 0.25 # +/- 25%
 
 
 ##################################
-## run mgmt scenarios with 
+## run mgmt scenarios with different levels of q and eff 
+    # 1 - base q and eff (sens_str)
     perchange1 <- 1.6 # ~50% SPR
     perchange2 <- 3.8 # ~35% SPR
+    E1 <- seq(1,2,length.out=25) # effort - increasing between years (doubling over 25 years)
+    E2 <- seq(1,3,length.out=25) # effort - increasing between years (tripling over 25 years)
     
-    sens_q_low_str <- list()
-    scenario1$catch$q <- scenario$catch$q*(1+perchange1)
-    scenario2$catch$q <- scenario$catch$q*(1+perchange1)
-    scenario3$catch$q <- scenario$catch$q*(1+perchange1)
-    scenario4$catch$q <- scenario$catch$q*(1+perchange1)
-    scenario5$catch$q <- scenario$catch$q*(1+perchange1)
-    scenario6$catch$q <- scenario$catch$q*(1+perchange1)
-    scenario7$catch$q <- scenario$catch$q*(1+perchange1)
-    scenario8$catch$q <- scenario$catch$q*(1+perchange1)
-    scenario9$catch$q <- scenario$catch$q*(1+perchange1)
-    scenario10$catch$q <- scenario$catch$q*(1+perchange1)
-    scenario11$catch$q <- scenario$catch$q*(1+perchange1)
-    scenario12$catch$q <- scenario$catch$q*(1+perchange1)
-    scenario13$catch$q <- scenario$catch$q*(1+perchange1)
+    # 2 - decrease SPR 50% (scen_str2)
+    scen_str2 <- list()
+	    scenario1$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario2$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario3$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario4$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario5$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario6$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario7$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario8$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario9$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario10$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario11$catch$q <- scenario$catch$q*(1+perchange1)
 
-    sens_q_low_str$scen1 <- scallop_model_fun(scenario1)
-    sens_q_low_str$scen2 <- scallop_model_fun(scenario2)
-    sens_q_low_str$scen3 <- scallop_model_fun(scenario3)
-    sens_q_low_str$scen4 <- scallop_model_fun(scenario4)
-    sens_q_low_str$scen5 <- scallop_model_fun(scenario5)
-    sens_q_low_str$scen6 <- scallop_model_fun(scenario6)
-    sens_q_low_str$scen7 <- scallop_model_fun(scenario7)
-    sens_q_low_str$scen8 <- scallop_model_fun(scenario8)
-    sens_q_low_str$scen9 <- scallop_model_fun(scenario9)
-    sens_q_low_str$scen10 <- scallop_model_fun(scenario10)
-    sens_q_low_str$scen11 <- scallop_model_fun(scenario11)
-    sens_q_low_str$scen12 <- scallop_model_fun(scenario12)
-    sens_q_low_str$scen13 <- scallop_model_fun(scenario13)
+	    scen_str2$scen1 <- scallop_model_fun(scenario1)
+	    scen_str2$scen2 <- scallop_model_fun(scenario2)
+	    scen_str2$scen3 <- scallop_model_fun(scenario3)
+	    scen_str2$scen4 <- scallop_model_fun(scenario4)
+	    scen_str2$scen5 <- scallop_model_fun(scenario5)
+	    scen_str2$scen6 <- scallop_model_fun(scenario6)
+	    scen_str2$scen7 <- scallop_model_fun(scenario7)
+	    scen_str2$scen8 <- scallop_model_fun(scenario8)
+	    scen_str2$scen9 <- scallop_model_fun(scenario9)
+	    scen_str2$scen10 <- scallop_model_fun(scenario10)
+	    scen_str2$scen11 <- scallop_model_fun(scenario11)
+
+    # 3 - decrease SPR 35% (scen_str3)
+    scen_str3 <- list()
+	    scenario1$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario2$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario3$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario4$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario5$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario6$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario7$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario8$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario9$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario10$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario11$catch$q <- scenario$catch$q*(1+perchange2)
+
+	    scen_str3$scen1 <- scallop_model_fun(scenario1)
+	    scen_str3$scen2 <- scallop_model_fun(scenario2)
+	    scen_str3$scen3 <- scallop_model_fun(scenario3)
+	    scen_str3$scen4 <- scallop_model_fun(scenario4)
+	    scen_str3$scen5 <- scallop_model_fun(scenario5)
+	    scen_str3$scen6 <- scallop_model_fun(scenario6)
+	    scen_str3$scen7 <- scallop_model_fun(scenario7)
+	    scen_str3$scen8 <- scallop_model_fun(scenario8)
+	    scen_str3$scen9 <- scallop_model_fun(scenario9)
+	    scen_str3$scen10 <- scallop_model_fun(scenario10)
+	    scen_str3$scen11 <- scallop_model_fun(scenario11)
+
+    # 4 - increase eff double (scen_str4)
+	scen_str4 <- list()
+		scenario1$catch$q <- scenario$catch$q
+	    scenario2$catch$q <- scenario$catch$q
+	    scenario3$catch$q <- scenario$catch$q
+	    scenario4$catch$q <- scenario$catch$q
+	    scenario5$catch$q <- scenario$catch$q
+	    scenario6$catch$q <- scenario$catch$q
+	    scenario7$catch$q <- scenario$catch$q
+	    scenario8$catch$q <- scenario$catch$q
+	    scenario9$catch$q <- scenario$catch$q
+	    scenario10$catch$q <- scenario$catch$q
+	    scenario11$catch$q <- scenario$catch$q
+		scenario1$catch$E_years <- E1
+	    scenario2$catch$E_years <- E1
+	    scenario3$catch$E_years <- E1
+	    scenario4$catch$E_years <- E1
+	    scenario5$catch$E_years <- E1
+	    scenario6$catch$E_years <- E1
+	    scenario7$catch$E_years <- E1
+	    scenario8$catch$E_years <- E1
+	    scenario9$catch$E_years <- E1
+	    scenario10$catch$E_years <- E1
+	    scenario11$catch$E_years <- E1
+
+	    scen_str4$scen1 <- scallop_model_fun(scenario1)
+	    scen_str4$scen2 <- scallop_model_fun(scenario2)
+	    scen_str4$scen3 <- scallop_model_fun(scenario3)
+	    scen_str4$scen4 <- scallop_model_fun(scenario4)
+	    scen_str4$scen5 <- scallop_model_fun(scenario5)
+	    scen_str4$scen6 <- scallop_model_fun(scenario6)
+	    scen_str4$scen7 <- scallop_model_fun(scenario7)
+	    scen_str4$scen8 <- scallop_model_fun(scenario8)
+	    scen_str4$scen9 <- scallop_model_fun(scenario9)
+	    scen_str4$scen10 <- scallop_model_fun(scenario10)
+	    scen_str4$scen11 <- scallop_model_fun(scenario11)
+
+    # 5 - increase eff double decrease SPR 50% (scen_str5)
+    scen_str5 <- list()
+	    scenario1$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario2$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario3$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario4$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario5$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario6$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario7$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario8$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario9$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario10$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario11$catch$q <- scenario$catch$q*(1+perchange1)
+
+	    scen_str5$scen1 <- scallop_model_fun(scenario1)
+	    scen_str5$scen2 <- scallop_model_fun(scenario2)
+	    scen_str5$scen3 <- scallop_model_fun(scenario3)
+	    scen_str5$scen4 <- scallop_model_fun(scenario4)
+	    scen_str5$scen5 <- scallop_model_fun(scenario5)
+	    scen_str5$scen6 <- scallop_model_fun(scenario6)
+	    scen_str5$scen7 <- scallop_model_fun(scenario7)
+	    scen_str5$scen8 <- scallop_model_fun(scenario8)
+	    scen_str5$scen9 <- scallop_model_fun(scenario9)
+	    scen_str5$scen10 <- scallop_model_fun(scenario10)
+	    scen_str5$scen11 <- scallop_model_fun(scenario11)
+
+    # 6 - increase eff double decrease SPR 35% (scen_str6)
+    scen_str6 <- list()
+	    scenario1$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario2$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario3$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario4$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario5$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario6$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario7$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario8$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario9$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario10$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario11$catch$q <- scenario$catch$q*(1+perchange2)
+
+	    scen_str6$scen1 <- scallop_model_fun(scenario1)
+	    scen_str6$scen2 <- scallop_model_fun(scenario2)
+	    scen_str6$scen3 <- scallop_model_fun(scenario3)
+	    scen_str6$scen4 <- scallop_model_fun(scenario4)
+	    scen_str6$scen5 <- scallop_model_fun(scenario5)
+	    scen_str6$scen6 <- scallop_model_fun(scenario6)
+	    scen_str6$scen7 <- scallop_model_fun(scenario7)
+	    scen_str6$scen8 <- scallop_model_fun(scenario8)
+	    scen_str6$scen9 <- scallop_model_fun(scenario9)
+	    scen_str6$scen10 <- scallop_model_fun(scenario10)
+	    scen_str6$scen11 <- scallop_model_fun(scenario11)
 
 
-    sens_q_high_str <- list()
-    scenario1$catch$q <- scenario$catch$q*(1+perchange2)
-    scenario2$catch$q <- scenario$catch$q*(1+perchange2)
-    scenario3$catch$q <- scenario$catch$q*(1+perchange2)
-    scenario4$catch$q <- scenario$catch$q*(1+perchange2)
-    scenario5$catch$q <- scenario$catch$q*(1+perchange2)
-    scenario6$catch$q <- scenario$catch$q*(1+perchange2)
-    scenario7$catch$q <- scenario$catch$q*(1+perchange2)
-    scenario8$catch$q <- scenario$catch$q*(1+perchange2)
-    scenario9$catch$q <- scenario$catch$q*(1+perchange2)
-    scenario10$catch$q <- scenario$catch$q*(1+perchange2)
-    scenario11$catch$q <- scenario$catch$q*(1+perchange2)
-    scenario12$catch$q <- scenario$catch$q*(1+perchange2)
-    scenario13$catch$q <- scenario$catch$q*(1+perchange2)
+    # 7 - increase eff triple (scen_str7)
+    scen_str7 <- list()
+    	scenario1$catch$q <- scenario$catch$q
+	    scenario2$catch$q <- scenario$catch$q
+	    scenario3$catch$q <- scenario$catch$q
+	    scenario4$catch$q <- scenario$catch$q
+	    scenario5$catch$q <- scenario$catch$q
+	    scenario6$catch$q <- scenario$catch$q
+	    scenario7$catch$q <- scenario$catch$q
+	    scenario8$catch$q <- scenario$catch$q
+	    scenario9$catch$q <- scenario$catch$q
+	    scenario10$catch$q <- scenario$catch$q
+	    scenario11$catch$q <- scenario$catch$q
+    	scenario1$catch$E_years <- E2
+	    scenario2$catch$E_years <- E2
+	    scenario3$catch$E_years <- E2
+	    scenario4$catch$E_years <- E2
+	    scenario5$catch$E_years <- E2
+	    scenario6$catch$E_years <- E2
+	    scenario7$catch$E_years <- E2
+	    scenario8$catch$E_years <- E2
+	    scenario9$catch$E_years <- E2
+	    scenario10$catch$E_years <- E2
+	    scenario11$catch$E_years <- E2
 
-    sens_q_high_str$scen1 <- scallop_model_fun(scenario1)
-    sens_q_high_str$scen2 <- scallop_model_fun(scenario2)
-    sens_q_high_str$scen3 <- scallop_model_fun(scenario3)
-    sens_q_high_str$scen4 <- scallop_model_fun(scenario4)
-    sens_q_high_str$scen5 <- scallop_model_fun(scenario5)
-    sens_q_high_str$scen6 <- scallop_model_fun(scenario6)
-    sens_q_high_str$scen7 <- scallop_model_fun(scenario7)
-    sens_q_high_str$scen8 <- scallop_model_fun(scenario8)
-    sens_q_high_str$scen9 <- scallop_model_fun(scenario9)
-    sens_q_high_str$scen10 <- scallop_model_fun(scenario10)
-    sens_q_high_str$scen11 <- scallop_model_fun(scenario11)
-    sens_q_high_str$scen12 <- scallop_model_fun(scenario12)
-    sens_q_high_str$scen13 <- scallop_model_fun(scenario13)
+	    scen_str7$scen1 <- scallop_model_fun(scenario1)
+	    scen_str7$scen2 <- scallop_model_fun(scenario2)
+	    scen_str7$scen3 <- scallop_model_fun(scenario3)
+	    scen_str7$scen4 <- scallop_model_fun(scenario4)
+	    scen_str7$scen5 <- scallop_model_fun(scenario5)
+	    scen_str7$scen6 <- scallop_model_fun(scenario6)
+	    scen_str7$scen7 <- scallop_model_fun(scenario7)
+	    scen_str7$scen8 <- scallop_model_fun(scenario8)
+	    scen_str7$scen9 <- scallop_model_fun(scenario9)
+	    scen_str7$scen10 <- scallop_model_fun(scenario10)
+	    scen_str7$scen11 <- scallop_model_fun(scenario11)
+
+    # 8 - increase eff triple decrease SPR 50% (scen_str8)
+	scen_str8 <- list()
+	    scenario1$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario2$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario3$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario4$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario5$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario6$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario7$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario8$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario9$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario10$catch$q <- scenario$catch$q*(1+perchange1)
+	    scenario11$catch$q <- scenario$catch$q*(1+perchange1)
+
+	    scen_str8$scen1 <- scallop_model_fun(scenario1)
+	    scen_str8$scen2 <- scallop_model_fun(scenario2)
+	    scen_str8$scen3 <- scallop_model_fun(scenario3)
+	    scen_str8$scen4 <- scallop_model_fun(scenario4)
+	    scen_str8$scen5 <- scallop_model_fun(scenario5)
+	    scen_str8$scen6 <- scallop_model_fun(scenario6)
+	    scen_str8$scen7 <- scallop_model_fun(scenario7)
+	    scen_str8$scen8 <- scallop_model_fun(scenario8)
+	    scen_str8$scen9 <- scallop_model_fun(scenario9)
+	    scen_str8$scen10 <- scallop_model_fun(scenario10)
+	    scen_str8$scen11 <- scallop_model_fun(scenario11)
+
+    # 9 - increase eff tripe decrease SPR 35% (scen_str9)
+    scen_str9 <- list()
+	    scenario1$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario2$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario3$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario4$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario5$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario6$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario7$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario8$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario9$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario10$catch$q <- scenario$catch$q*(1+perchange2)
+	    scenario11$catch$q <- scenario$catch$q*(1+perchange2)
+
+	    scen_str9$scen1 <- scallop_model_fun(scenario1)
+	    scen_str9$scen2 <- scallop_model_fun(scenario2)
+	    scen_str9$scen3 <- scallop_model_fun(scenario3)
+	    scen_str9$scen4 <- scallop_model_fun(scenario4)
+	    scen_str9$scen5 <- scallop_model_fun(scenario5)
+	    scen_str9$scen6 <- scallop_model_fun(scenario6)
+	    scen_str9$scen7 <- scallop_model_fun(scenario7)
+	    scen_str9$scen8 <- scallop_model_fun(scenario8)
+	    scen_str9$scen9 <- scallop_model_fun(scenario9)
+	    scen_str9$scen10 <- scallop_model_fun(scenario10)
+	    scen_str9$scen11 <- scallop_model_fun(scenario11)
 
 
 ##################################
 # save all scenarios to one .RData
-    save(scen_str, sens_str, sens_q_low_str, sens_q_high_str,
+scen_str_all <- list(scen_str = scen_str,
+					scen_str2 = scen_str2,
+					scen_str3 = scen_str3,
+					scen_str4 = scen_str4,
+					scen_str5 = scen_str5,
+					scen_str6 = scen_str6,
+					scen_str7 = scen_str7,
+					scen_str8 = scen_str8,
+					scen_str9 = scen_str9)
+    save(scen_str_all,
+    	sens_str,
      file = "./Scenario_Figures/scenario_sensitivity_storage.RData")
 
     rm(list=ls())
@@ -220,6 +393,7 @@ perchange <- 0.25 # +/- 25%
 
 ##################################
     #grab the global ranges for dynamic settings
+    scen_str <- scen_str_all$scen_str
     vb.r <- range(sapply(scen_str,function(x)range(x$results$VB,na.rm=T)))
     et.r <- range(sapply(scen_str,function(x)range(x$results$et,na.rm=T)))
     yield.r <- range(sapply(scen_str,function(x)range(x$results$yield_n,na.rm=T)))
@@ -302,7 +476,7 @@ perchange <- 0.25 # +/- 25%
         dev.off()
     }
 
-rm(list=setdiff(ls(), c("scen_str","sens_q_low_str","sens_q_high_str","sens_str")))
+rm(list=setdiff(ls(), c("scen_str_all","sens_str")))
 gc()
 
 ##################################
@@ -311,94 +485,66 @@ gc()
 ## regular q scenarios
     ## relative errors
     # calculations of metrics
-    # "SPR"
-        eggs0 <- sapply(1:14, function(x) scen_str[[x]]$results$eggs[12])
-        eggs_list <- sapply(1:14, function(x) mean(c(scen_str[[x]]$results$eggs[21:24*12]),sum(scen_str[[x]]$results$eggs_mon[289:300]))) # no eggs calcs in last year in results$eggs so needed to calculate from eggs_mon
-        SPR <- eggs_list/eggs0
-    # hcpue (open months, last 5 years) - is there a better way to do this?
-        hcpue_list <- lapply(1:14, function(x) matrix(scen_str[[x]]$results$hcpue, nrow = 12, ncol = 25))
-        for(i in 1:14) hcpue_list[[i]][hcpue_list[[i]] == 0] <- NA
-        hcpue <- sapply(1:14, function(x) colMeans(hcpue_list[[x]], na.rm = TRUE))
-        hcpue <- sapply(1:14, function(x) mean(hcpue[21:25,x]))    
-    # hr (open montths, last 5 years)
-       hr_list <- lapply(1:14, function(x) matrix(scen_str[[x]]$results$hr, nrow = 12, ncol = 25))
-        for(i in 1:14) hr_list[[i]][hr_list[[i]] == 0] <- NA
-        hr <- sapply(1:14, function(x) colMeans(hr_list[[x]], na.rm = TRUE))
-        hr <- sapply(1:14, function(x) mean(hr[21:25, x])) 
-        hr[3] <- 0 # "unfished" scenario
-    # combine all results to get relative errors
+    # scen_str1
+	res_mat_scen <- list()
+	eggs0 <- sapply(1:12, function(x) scen_str_all[[1]][[x]]$results$eggs[12])
+	    eggs_list <- sapply(1:12, function(x) mean(c(scen_str_all[[1]][[x]]$results$eggs[21:24*12]),sum(scen_str_all[[1]][[x]]$results$eggs_mon[289:300]))) # no eggs calcs in last year in results$eggs so needed to calculate from eggs_mon
+	    SPR <- eggs_list/eggs0
+  	hcpue_list <- lapply(1:12, function(x) matrix(scen_str_all[[1]][[x]]$results$hcpue, nrow = 12, ncol = 25))
+	    for(i in 1:12) hcpue_list[[i]][hcpue_list[[i]] == 0] <- NA
+	    hcpue <- sapply(1:12, function(x) colMeans(hcpue_list[[x]], na.rm = TRUE))
+	    hcpue <- sapply(1:12, function(x) mean(hcpue[21:25,x]))   
+    hr_list <- lapply(1:12, function(x) matrix(scen_str_all[[1]][[x]]$results$hr, nrow = 12, ncol = 25))
+	    for(i in 1:12) hr_list[[i]][hr_list[[i]] == 0] <- NA
+	    hr <- sapply(1:12, function(x) colMeans(hr_list[[x]], na.rm = TRUE))
+	    hr <- sapply(1:12, function(x) mean(hr[21:25, x])) 
+	    hr[3] <- 0 # "unfished" scenario
     SPR_base <- SPR[1]; hcpue_base <- hcpue[1]; hr_base <- hr[1]
-    res_mat_scen <- matrix(NA, nrow = 3, ncol = 13) 
-        res_mat_scen[1,] <- sapply(2:14, function(x) (SPR[x]-SPR_base)/SPR_base)
-        res_mat_scen[2,] <- sapply(2:14, function(x) (hcpue[x]-hcpue_base)/hcpue_base)
-        res_mat_scen[3,] <- sapply(2:14, function(x) (hr[x]-hr_base)/hr_base)
-        colnames(res_mat_scen) <- names(scen_str)[2:14]
-        rownames(res_mat_scen) <- c("SPR","hcpue","hr")
-        res_mat_scen
+    res_mat_scen[[1]] <- matrix(NA, nrow = 3, ncol = 11) 
+        res_mat_scen[[1]][1,] <- sapply(2:12, function(x) (SPR[x]-SPR_base)/SPR_base)
+        res_mat_scen[[1]][2,] <- sapply(2:12, function(x) (hcpue[x]-hcpue_base)/hcpue_base)
+        res_mat_scen[[1]][3,] <- sapply(2:12, function(x) (hr[x]-hr_base)/hr_base)
+        colnames(res_mat_scen[[1]]) <- names(scen_str_all[[1]])[2:12]
+        rownames(res_mat_scen[[1]]) <- c("SPR","hcpue","hr")
 
-## low q scenarios
-    ## relative errors
-    # calculations of metrics
-    # "SPR"
-        eggs0 <- sapply(1:13, function(x) sens_q_low_str[[x]]$results$eggs[12])
-        eggs_list <- sapply(1:13, function(x) mean(c(sens_q_low_str[[x]]$results$eggs[21:24*12]),sum(sens_q_low_str[[x]]$results$eggs_mon[289:300]))) # no eggs calcs in last year in results$eggs so needed to calculate from eggs_mon
+	for(j in 2:9){
+		eggs0 <- sapply(1:11, function(x) scen_str_all[[j]][[x]]$results$eggs[12])
+        eggs_list <- sapply(1:11, function(x) mean(c(scen_str_all[[j]][[x]]$results$eggs[21:24*12]),sum(scen_str_all[[j]][[x]]$results$eggs_mon[289:300]))) # no eggs calcs in last year in results$eggs so needed to calculate from eggs_mon
         SPR <- eggs_list/eggs0
     # hcpue (open months, last 5 years) - is there a better way to do this?
-        hcpue_list <- lapply(1:13, function(x) matrix(sens_q_low_str[[x]]$results$hcpue, nrow = 12, ncol = 25))
-        for(i in 1:13) hcpue_list[[i]][hcpue_list[[i]] == 0] <- NA
-        hcpue <- sapply(1:13, function(x) colMeans(hcpue_list[[x]], na.rm = TRUE))
-        hcpue <- sapply(1:13, function(x) mean(hcpue[21:25,x]))    
+        hcpue_list <- lapply(1:11, function(x) matrix(scen_str_all[[j]][[x]]$results$hcpue, nrow = 12, ncol = 25))
+        for(i in 1:11) hcpue_list[[i]][hcpue_list[[i]] == 0] <- NA
+        hcpue <- sapply(1:11, function(x) colMeans(hcpue_list[[x]], na.rm = TRUE))
+        hcpue <- sapply(1:11, function(x) mean(hcpue[21:25,x]))    
     # hr (open montths, last 5 years)
-        hr_list <- lapply(1:13, function(x) matrix(sens_q_low_str[[x]]$results$hr, nrow = 12, ncol = 25))
-        for(i in 1:13) hr_list[[i]][hr_list[[i]] == 0] <- NA
-        hr <- sapply(1:13, function(x) colMeans(hr_list[[x]], na.rm = TRUE))
-        hr <- sapply(1:13, function(x) mean(hr[21:25, x])) 
+       hr_list <- lapply(1:11, function(x) matrix(scen_str_all[[j]][[x]]$results$hr, nrow = 12, ncol = 25))
+        for(i in 1:11) hr_list[[i]][hr_list[[i]] == 0] <- NA
+        hr <- sapply(1:11, function(x) colMeans(hr_list[[x]], na.rm = TRUE))
+        hr <- sapply(1:11, function(x) mean(hr[21:25, x])) 
         hr[2] <- 0 # "unfished" scenario
     # combine all results to get relative errors
-    res_mat_lowq <- matrix(NA, nrow = 3, ncol = 13) 
-        res_mat_lowq[1,] <- sapply(1:13, function(x) (SPR[x]-SPR_base)/SPR_base)
-        res_mat_lowq[2,] <- sapply(1:13, function(x) (hcpue[x]-hcpue_base)/hcpue_base)
-        res_mat_lowq[3,] <- sapply(1:13, function(x) (hr[x]-hr_base)/hr_base)
-        colnames(res_mat_lowq) <- names(sens_q_low_str)[1:13]
-        rownames(res_mat_lowq) <- c("SPR","hcpue","hr")
-        res_mat_lowq
-
-## high q scenarios
-    ## relative errors
-    # calculations of metrics
-    # "SPR"
-        eggs0 <- sapply(1:13, function(x) sens_q_high_str[[x]]$results$eggs[12])
-        eggs_list <- sapply(1:13, function(x) mean(c(sens_q_high_str[[x]]$results$eggs[21:24*12]),sum(sens_q_high_str[[x]]$results$eggs_mon[289:300]))) # no eggs calcs in last year in results$eggs so needed to calculate from eggs_mon
-        SPR <- eggs_list/eggs0
-    # hcpue (open months, last 5 years) - is there a better way to do this?
-        hcpue_list <- lapply(1:13, function(x) matrix(sens_q_high_str[[x]]$results$hcpue, nrow = 12, ncol = 25))
-        for(i in 1:13) hcpue_list[[i]][hcpue_list[[i]] == 0] <- NA
-        hcpue <- sapply(1:13, function(x) colMeans(hcpue_list[[x]], na.rm = TRUE))
-        hcpue <- sapply(1:13, function(x) mean(hcpue[21:25,x]))    
-    # hr (open montths, last 5 years)
-        hr_list <- lapply(1:13, function(x) matrix(sens_q_high_str[[x]]$results$hr, nrow = 12, ncol = 25))
-        for(i in 1:13) hr_list[[i]][hr_list[[i]] == 0] <- NA
-        hr <- sapply(1:13, function(x) colMeans(hr_list[[x]], na.rm = TRUE))
-        hr <- sapply(1:13, function(x) mean(hr[21:25, x])) 
-        hr[2] <- 0 # "unfished" scenario
-    # combine all results to get relative errors
-    res_mat_highq <- matrix(NA, nrow = 3, ncol = 13) 
-        res_mat_highq[1,] <- sapply(1:13, function(x) (SPR[x]-SPR_base)/SPR_base)
-        res_mat_highq[2,] <- sapply(1:13, function(x) (hcpue[x]-hcpue_base)/hcpue_base)
-        res_mat_highq[3,] <- sapply(1:13, function(x) (hr[x]-hr_base)/hr_base)
-        colnames(res_mat_highq) <- names(sens_q_high_str)[1:13]
-        rownames(res_mat_highq) <- c("SPR","hcpue","hr")
-        res_mat_highq
-
+	    # SPR_base <- SPR[1]; hcpue_base <- hcpue[1]; hr_base <- hr[1]
+	    res_mat_scen[[j]] <- matrix(NA, nrow = 3, ncol = 11) 
+	        res_mat_scen[[j]][1,] <- sapply(1:11, function(x) (SPR[x]-SPR_base)/SPR_base)
+	        res_mat_scen[[j]][2,] <- sapply(1:11, function(x) (hcpue[x]-hcpue_base)/hcpue_base)
+	        res_mat_scen[[j]][3,] <- sapply(1:11, function(x) (hr[x]-hr_base)/hr_base)
+	        colnames(res_mat_scen[[j]]) <- names(scen_str_all[[j]])[1:11]
+	        rownames(res_mat_scen[[j]]) <- c("SPR","hcpue","hr")
+	}
+        
 ## plots
-    SPR <- t(cbind(res_mat_scen[1,], res_mat_lowq[1,], res_mat_highq[1,]))
-    hcpue <- t(cbind(res_mat_scen[2,], res_mat_lowq[2,], res_mat_highq[2,]))
-    hr <- t(cbind(res_mat_scen[3,], res_mat_lowq[3,], res_mat_highq[3,]))
+	SPR <- matrix(NA, nrow = 9, ncol = 11)
+	hcpue <- matrix(NA, nrow = 9, ncol = 11)
+	hr <- matrix(NA, nrow = 9, ncol = 11)
+
+	for(i in 1:9) SPR[i,] <- res_mat_scen[[i]][1,]
+	for(i in 1:9) hcpue[i,] <- res_mat_scen[[i]][2,]
+	for(i in 1:9) hr[i,] <- res_mat_scen[[i]][3,]
     bar_res <- list(Eggs = SPR,
                     hcpue = hcpue,
                     hr = hr)
     save(bar_res, file = "./Results_RData/rel_change_plots.RData")
-    save(scen_str, sens_str, sens_q_low_str, sens_q_high_str,
+    save(scen_str_all, sens_str,
      file = "./Results_RData/scenario_sensitivity_storage.RData")
 
 # rm(list=setdiff(ls(), c("scen_str","sens_q_low_str","sens_q_high_str","sens_str")))
@@ -407,6 +553,7 @@ gc()
 ##################################
 ## sensitivity analysis plots
 ## SPR
+    scen_str <- scen_str_all[[1]]
     SPR_base <- c(scen_str$base$results$eggs[1:24*12],sum(scen_str$base$results$eggs_mon[289:300]))/scen_str$base$results$eggs[12]
     eggs0 <- sapply(1:10, function(x) sens_str[[x]]$results$eggs[12])
     eggs_list <- NA
