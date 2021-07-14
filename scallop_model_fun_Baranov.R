@@ -20,8 +20,8 @@ scenario <- list(
               # wmat = 12,               #Weight at maturity
               amat = 5.5,               #Age at 50% maturity
               mgr = 2.5,                #Maturity logistic function growth rate
-              vlh = 50,                #Vulnerability logistic param, size at 50% selected
-              vgr = 0.1,                 #Vulnerability logistic param, growth rate
+              vlh = 35,                #Vulnerability logistic param, size at 50% selected
+              vgr = 0.5,                 #Vulnerability logistic param, growth rate
               M = 0.25,                 #Natural Mortality, note this is a Monthly Instantaneous Rate
               lorenzc = 1,             #Lorenzen exponent for Lorenzen M
               #Probability of Scallop Spawning across any age
@@ -71,7 +71,7 @@ scallop_model_fun <- function(scenario){
     life.vec <- data.frame(Age = seq(1,amax))
     life.vec$TL <- vblinf*(1-exp(-vbk*(life.vec$Age-vbt0)))     #Length of scallops at age, VB function
     life.vec$Wt <- (alw*(life.vec$TL)^alwb)                     #Weight of Scallops WL function
-    life.vec$Vul <- 1/(1+exp(-vgr*(life.vec$TL-vlh)))           #Vulnerability of Scallops to harvest, logistic function 
+    life.vec$Vul <- 1/(1+exp(-vgr*(life.vec$TL-vlh)))/sum(1/(1+exp(-vgr*(life.vec$TL-vlh))))  #Vulnerability of Scallops to harvest, logistic function 
     life.vec$Surv <- exp(-(M*TLref/life.vec$TL))^lorenzc        #Survival of scallops at age (based on Lorenzen M)
     life.vec$M <- -log(life.vec$Surv)                           #Natural mortality
     life.vec$Lo <- life.vec$Lfished <- vector(length=amax)      #Survivorship vectors
