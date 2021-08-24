@@ -5,18 +5,24 @@
 #		
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+#Author: Zach Siders
+#Incept: 2020-Dec-12
 
 ###-----------------------------------------------------
 #		Initialization
 ###-----------------------------------------------------
 	library(lubridate)
 	library(glmmTMB)
+
 ###-----------------------------------------------------
 #		Data Read In
 ###-----------------------------------------------------
-	path <- "/Users/zach/Downloads/"
+	# wd <- "" # set your working directory here
+	setwd(wd)
+	path <- paste0(wd, "/data/")
 	eff <- read.csv(paste0(path,"Scallop_EffDy.csv"), as.is=T)
 	catch <- read.csv(paste0(path,"Scallop_CatchDy.csv"), as.is=T)
+
 ###-----------------------------------------------------
 #		growth
 ###-----------------------------------------------------
@@ -28,24 +34,27 @@
       (-6.704*sh + 480.96)/2
     }
     npgal <- sh2gal(TL)
+    
 ###-----------------------------------------------------
 #		Data Cleaning
 ###-----------------------------------------------------
-	#convert date
+	# convert date
 	eff$date <- mdy(eff$Date)
 	catch$date <- mdy(catch$Date)
-	#add weekday ID
+	# add weekday ID
 	eff$wday <- as.factor(wday(eff$date,label=TRUE))
 	catch$wday <- wday(catch$date,label=TRUE)
-	#add difftime
+	# add difftime
 	eff$t <- as.integer(difftime(eff$date,min(eff$date)-1, units='days'))
 	catch$t <- as.integer(difftime(catch$date,min(catch$date)-1, units='days'))
+
 ###-----------------------------------------------------
 #		Add gallons
 ###-----------------------------------------------------
 	catch$size <- vblinf*(1-exp(-vbk*(julian(catch$date, origin=as.Date('2018-01-01'))/365*12-vbt0)))
 	catch$numpergal <- sh2gal(catch$size)
 	catch$gallons <- catch$Catch/catch$numpergal
+
 ###-----------------------------------------------------
 #		Model
 ###-----------------------------------------------------
@@ -57,6 +66,7 @@
 
 	mod.gallons <- glmmTMB(log(gallons)~poly(t,3), data=catch)
 	summary(mod.gallons)
+
 ###-----------------------------------------------------
 #		Predictions
 ###-----------------------------------------------------
@@ -78,6 +88,7 @@
 	catch.agg <- aggregate(cbind(mu,mu.gal)~month, catch.pred, mean)
 	catch.agg$Catch <- exp(catch.agg$mu)
 	catch.agg$gallons <- exp(catch.agg$mu.gal)
+
 ###-----------------------------------------------------
 #		Figures
 ###-----------------------------------------------------
