@@ -10,7 +10,7 @@
 	# tune R0
 	# set up 10 management scenarios
 	# run models with various levels of exploitation status
-	# extract relative values
+	# extract absolute and relative values
 
 library(truncnorm)
 # wd <- "" # set your working directory here, where all the code is
@@ -53,18 +53,18 @@ source("functions/tune_calibrate.R") # for tuning and calibrating the models
 	mgmt_scen[[2]]$bag <- rep(3,12) # bag limit = 3
 	mgmt_scen[[3]]$bag <- rep(1,12) # bag limit = 1
 	mgmt_scen[[4]]$E_open <- c(0,0,0,0,0,0,1,1,1,1,0,0) # season length - increase in total effort, extend one month forward
-	mgmt_scen[[5]]$E_open <- c(0,0,0,0,0,0,1,1,1,1,0,0) # season length - same effort, extend one month forward
-	mgmt_scen[[5]]$E_cap <- TRUE
-	mgmt_scen[[6]]$E_open <- c(0,0,0,0,0,1,1,1,1,0,0,0)# season length - increase in total effort, extend one month back
-	mgmt_scen[[7]]$E_open <- c(0,0,0,0,0,1,1,1,1,0,0,0)# season length - same effort, extend one month back
-	mgmt_scen[[7]]$E_cap <- TRUE
-	mgmt_scen[[8]]$E_open <- c(0,0,0,0,0,0,0,1,1,1,0,0)# push season back one month
-	mgmt_scen[[9]]$E_open <- c(0,0,0,0,0,1,1,1,0,0,0,0)# push season forward one month
-	mgmt_scen[[10]]$bag <- c(1,1,1,1,1,1,0.5,1,1.5,2,2,2)# rolling bag limit - increasing
-	mgmt_scen[[11]]$bag <- c(1,1,1,1,1,1,1,0.5,1,1.5,2,2)# rolling bag and season start - back one month
-	mgmt_scen[[11]]$E_open <- c(0,0,0,0,0,0,0,1,1,1,0,0)
-	mgmt_scen[[12]]$bag <- c(1,1,1,1,1,1,0.5,1,1.5,2,2,2)# rolling bag and season start - forward one month
-	mgmt_scen[[12]]$E_open <- c(0,0,0,0,0,0,1,1,1,0,0,0)
+	# mgmt_scen[[5]]$E_open <- c(0,0,0,0,0,0,1,1,1,1,0,0) # season length - same effort, extend one month forward
+	# mgmt_scen[[5]]$E_cap <- TRUE
+	mgmt_scen[[5]]$E_open <- c(0,0,0,0,0,1,1,1,1,0,0,0)# season length - increase in total effort, extend one month back
+	# mgmt_scen[[7]]$E_open <- c(0,0,0,0,0,1,1,1,1,0,0,0)# season length - same effort, extend one month back
+	# mgmt_scen[[7]]$E_cap <- TRUE
+	mgmt_scen[[6]]$E_open <- c(0,0,0,0,0,0,0,1,1,1,0,0)# push season back one month
+	mgmt_scen[[7]]$E_open <- c(0,0,0,0,0,1,1,1,0,0,0,0)# push season forward one month
+	mgmt_scen[[8]]$bag <- c(1,1,1,1,1,1,0.5,1,1.5,2,2,2)# rolling bag limit - increasing
+	mgmt_scen[[9]]$bag <- c(1,1,1,1,1,1,1,0.5,1,1.5,2,2)# rolling bag and season start - back one month
+	mgmt_scen[[9]]$E_open <- c(0,0,0,0,0,0,0,1,1,1,0,0)
+	mgmt_scen[[10]]$bag <- c(1,1,1,1,1,1,0.5,1,1.5,2,2,2)# rolling bag and season start - forward one month
+	mgmt_scen[[10]]$E_open <- c(0,0,0,0,0,0,1,1,1,0,0,0)
 
 
 ###-----------------------------------------------------
@@ -156,10 +156,10 @@ source("functions/tune_calibrate.R") # for tuning and calibrating the models
 ##################################
 # save all scenarios to one .RData
 
-    save(scen_str_base,
-    	scen_str_all,
-    	sens_str,
-     file = "./Scenario_Figures/semel_scenario_sensitivity_storage.RData")
+    # save(scen_str_base,
+    # 	scen_str_all,
+    # 	sens_str,
+    #  file = "./Scenario_Figures/semel_scenario_sensitivity_storage.RData")
 
     # rm(list=ls())
     # gc()
@@ -184,37 +184,37 @@ source("functions/tune_calibrate.R") # for tuning and calibrating the models
 		hpue_base <- sapply(1:9, function(x) mean(hpue_base[21:25,x]))
 
 ## extracting values from all treatments and scenarios
-	depl_rel <- matrix(NA, nrow = 9, ncol = 12)
-	hcpue_rel <- matrix(NA, nrow = 9, ncol = 12)
-	hpue_rel <- matrix(NA, nrow = 9, ncol = 12)
-	depl_abs <- matrix(NA, nrow = 9, ncol = 12)
-	hcpue_abs <- matrix(NA, nrow = 9, ncol = 12)
-	hpue_abs <- matrix(NA, nrow = 9, ncol = 12)
+	depl_rel <- matrix(NA, nrow = 9, ncol = 10)
+	hcpue_rel <- matrix(NA, nrow = 9, ncol = 10)
+	hpue_rel <- matrix(NA, nrow = 9, ncol = 10)
+	depl_abs <- matrix(NA, nrow = 9, ncol = 10)
+	hcpue_abs <- matrix(NA, nrow = 9, ncol = 10)
+	hpue_abs <- matrix(NA, nrow = 9, ncol = 10)
 
 	for(j in 1:9){
 		# depletion
 			# eggs0 <- sapply(1:12, function(x) scen_str_all[[j]][[x]]$results$eggs[12])
-			eggs_list <- sapply(1:12, function(x) sum(scen_str_all[[j]][[x]]$results$eggs_mon[289:300]))
+			eggs_list <- sapply(1:10, function(x) sum(scen_str_all[[j]][[x]]$results$eggs_mon[289:300]))
 			depl <- eggs_list/eggs0
 		# hcpue (open months, last 5 years) - is there a better way to do this?
-	        hcpue_list <- lapply(1:12, function(x) matrix(scen_str_all[[j]][[x]]$results$hcpue, nrow = 12, ncol = 25))
-	        for(i in 1:12) hcpue_list[[i]][hcpue_list[[i]] == 0] <- NA
-	        hcpue <- sapply(1:12, function(x) colMeans(hcpue_list[[x]], na.rm = TRUE))
-	        hcpue <- sapply(1:12, function(x) mean(hcpue[21:25,x]))    
+	        hcpue_list <- lapply(1:10, function(x) matrix(scen_str_all[[j]][[x]]$results$hcpue, nrow = 12, ncol = 25))
+	        for(i in 1:10) hcpue_list[[i]][hcpue_list[[i]] == 0] <- NA
+	        hcpue <- sapply(1:10, function(x) colMeans(hcpue_list[[x]], na.rm = TRUE))
+	        hcpue <- sapply(1:10, function(x) mean(hcpue[21:25,x]))    
 	    # hpue (open montths, last 5 years)
-	       hpue_list <- lapply(1:12, function(x) matrix(scen_str_all[[j]][[x]]$results$hpue, nrow = 12, ncol = 25))
-	        for(i in 1:12) hpue_list[[i]][hpue_list[[i]] == 0] <- NA
-	        hpue <- sapply(1:12, function(x) colMeans(hpue_list[[x]], na.rm = TRUE))
-	        hpue <- sapply(1:12, function(x) mean(hpue[21:25, x])) 
+	       hpue_list <- lapply(1:10, function(x) matrix(scen_str_all[[j]][[x]]$results$hpue, nrow = 12, ncol = 25))
+	        for(i in 1:10) hpue_list[[i]][hpue_list[[i]] == 0] <- NA
+	        hpue <- sapply(1:10, function(x) colMeans(hpue_list[[x]], na.rm = TRUE))
+	        hpue <- sapply(1:10, function(x) mean(hpue[21:25, x])) 
 	        hpue[1] <- 0 # "unfished" scenario
 	    # combine all results to get relative errors
-	        depl_rel[j,] <- sapply(1:12, function(x) (depl[x]-depl_base[j])/depl_base[j])
-	        hcpue_rel[j,] <- sapply(1:12, function(x) (hcpue[x]-hcpue_base[j])/hcpue_base[j])
-	        hpue_rel[j,] <- sapply(1:12, function(x) (hpue[x]-hpue_base[j])/hpue_base[j])
+	        depl_rel[j,] <- sapply(1:10, function(x) (depl[x]-depl_base[j])/depl_base[j])
+	        hcpue_rel[j,] <- sapply(1:10, function(x) (hcpue[x]-hcpue_base[j])/hcpue_base[j])
+	        hpue_rel[j,] <- sapply(1:10, function(x) (hpue[x]-hpue_base[j])/hpue_base[j])
 	    # combine all results to get abs values
-	        depl_abs[j,] <- sapply(1:12, function(x) depl[x])
-	        hcpue_abs[j,] <- sapply(1:12, function(x) hcpue[x])
-	        hpue_abs[j,] <- sapply(1:12, function(x) hpue[x])
+	        depl_abs[j,] <- sapply(1:10, function(x) depl[x])
+	        hcpue_abs[j,] <- sapply(1:10, function(x) hcpue[x])
+	        hpue_abs[j,] <- sapply(1:10, function(x) hpue[x])
   	}
   	depl_abs <- cbind(depl_base, depl_abs)
   	hcpue_abs <- cbind(hcpue_base, hcpue_abs)
@@ -230,3 +230,73 @@ source("functions/tune_calibrate.R") # for tuning and calibrating the models
     # save(bar_res, file = "./Results_RData/semel_res_plots.RData")
     # save(scen_str_base, scen_str_all, sens_str,
     # file = "./Results_RData/semel_scenario_sensitivity_storage.RData")
+
+
+###-----------------------------------------------------
+#		Bar plots in the publication
+###-----------------------------------------------------
+scen_names2 <- c("base", "incr. bag", "decr. bag", "incr. szn. (later)", "incr. szn. (earlier)",
+                "later szn.", "earlier szn.", "rolling bag", "rolling bag later szn.", "rolling bag earlier szn.")
+require(RColorBrewer)
+col <- colorRampPalette(brewer.pal(9,"Blues"))(length(scen_names2))
+m <- matrix(c(1:6), nrow = 2, ncol = 3, byrow = TRUE)
+exploit_names <- c("high", "medium", "low")
+Et_names <- c("base effort", NA,NA,"double effort")
+
+## Spawning output
+with(bar_res,{
+    colnames(depl_abs) <- NULL; colnames(hcpue_abs) <- NULL; colnames(hpue_abs) <- NULL
+
+    layout(mat = m, heights = c(0.25,0.4))
+    for(i in 1:6){
+      if(i == 1) par(mar=c(1.1,3.2,2.5,0))
+      if(i %in% c(2,3)) par(mar = c(1.1,2.2,2.5,1))
+      # if(i == 4) par(mar = c(0.1,3.2,1,0))
+      # if(i %in% c(5,6)) par(mar = c(0.1,1,1,1))
+      if(i %in% 4) par(mar = c(11,3.2,1,0))
+      if(i %in% c(5,6)) par(mar = c(11,2.2,1,1))
+
+      if(i %in% c(1:3)) barplot(depl_abs[i,c(1,3:11)], axes = FALSE, ylim = c(0,1), col = col) # removed "unfished" scenario for now
+      if(i %in% c(4:6)){
+        b <- barplot(depl_abs[i,c(1,3:11)], axes = FALSE, cex.lab = 0.8, ylim = c(0,1), col = col)
+        axis(1,at=b[,1],tck=-0.01,labels=FALSE)
+        text(b[,1],par('usr')[3]-abs(diff(par('usr')[3:4]))*0.1,
+             scen_names2, srt=60, adj=c(1,0),xpd=NA)
+      }
+      mtext(letters[i], line = -1, adj = 0.05, cex = 0.9, las = 1, col = "grey30")
+      axis(2, at = seq(0,1,0.5), las = 1)
+      if(i %in% c(1,4)) title(ylab = Et_names[i], line = 2.3)
+
+      if(i %in% c(1,2,3)) title(main = exploit_names[i], font.main = 1, line = -.01, cex = 0.8)
+      if(i == 2) title(main = "Spawning output (eggs/eggs0)", line = 1.55)
+    }
+ })
+# dev.off()
+
+## Harvest per unit of effort
+with(bar_res,{
+    layout(mat = m, heights = c(0.25,0.4))
+    for(i in 1:6){
+      if(i == 1) par(mar=c(1.1,3.2,2.5,0))
+      if(i %in% c(2,3)) par(mar = c(1.1,2.2,2.5,1))
+      # if(i == 4) par(mar = c(0.1,3.2,1,0))
+      # if(i %in% c(5,6)) par(mar = c(0.1,1,1,1))
+      if(i %in% 4) par(mar = c(11,3.2,1,0))
+      if(i %in% c(5,6)) par(mar = c(11,2.2,1,1))
+
+      if(i %in% c(1:3))barplot(hpue_abs[i,c(1,3:11)], axes = FALSE, ylim = c(0, max(hpue_abs[,c(1,3:11)])+0.1), col = col) # removed "unfished" scenario for now
+      if(i %in% c(4:6)){
+        b <- barplot(hpue_abs[i,c(1,3:11)], axes = FALSE, las = 2, cex.lab = 0.8, ylim = c(0, max(hpue_abs[,c(1,3:11)])+0.1), col = col)
+        axis(1,at=b[,1],tck=-0.01,labels=FALSE)
+        text(b[,1],par('usr')[3]-abs(diff(par('usr')[3:4]))*0.1,
+             scen_names2, srt=60, adj=c(1,0),xpd=NA)
+      }
+      mtext(letters[i], line = -1, adj = 0.05, cex = 0.9, las = 1, col = "grey30")
+      axis(2, at = seq(0,1,0.5), las = 1)
+      if(i %in% c(1,4)) title(ylab = Et_names[i], line = 2.3)
+
+      if(i %in% c(1,2,3)) title(main = exploit_names[i], font.main = 1, line = -.01, cex = 0.8)
+      if(i == 2) title(main = "Harvest per unit of effort (gal/person)", line = 1.55)
+     }
+})
+# dev.off()
