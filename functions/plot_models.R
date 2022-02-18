@@ -11,26 +11,30 @@
 ###-----------------------------------------------------
 # 4x4 Life history plot
 # length at age, weight at age, maturity at age, and natural mortality at age
-  LH_plot <- function(scenario){
+  LH_plot <- function(age.seq, scenario){
     par(mfrow=c(2,2), mar=c(2,4,1,1), oma=c(3,3,1,1))
     # Length at Age
-    TL <- scenario$life$vblinf*(1-exp(-scenario$life$vbk*(1:18-scenario$life$vbt0)))
-    plot(1:length(TL), TL, ylab="", xaxt="n", las=1, pch=16, cex=1.2, ylim=c(0,70), xlim=c(0.5,18.5))
+    TL <- scenario$life$vblinf*(1-exp(-scenario$life$vbk*(age.seq-scenario$life$vbt0)))
+    plot(1:length(TL), TL, ylab="", xaxt="n", las=1, pch=16, cex=1.2, ylim=c(0,max(TL)*1.05), xlim=c(min(age.seq), max(age.seq)))
+    lines(1:length(TL), TL)
     mtext(text="Total Length (mm)", side=2, line=2.5, font=1)
     
     # Weight at Age
     Wt <- (scenario$life$alw*(TL)^scenario$life$alwb)
-    plot(1:length(Wt), Wt, ylab="", xaxt="n", las=1, pch=16, cex=1.2, ylim=c(0,30), xlim=c(0.5,18.5))
+    plot(1:length(Wt), Wt, ylab="", xaxt="n", las=1, pch=16, cex=1.2, ylim=c(0,max(Wt)*1.05), xlim=c(min(age.seq), max(age.seq)))
+    lines(1:length(Wt), Wt)
     mtext(text="Weight (g)", side=2, line=2.5, font=1)
     
     # Maturity at Age
-    Mat <- 1/(1+exp(-scenario$life$mgr*(1:18-scenario$life$amat)))
-    plot(1:length(Mat), Mat, ylab="", xlab="", las=1, pch=16, cex=1.2, ylim=c(0,1), xlim=c(0.5,18.5))
+    Mat <- 1/(1+exp(-scenario$life$mgr*(age.seq-scenario$life$amat)))
+    plot(1:length(Mat), Mat, ylab="", xlab="", las=1, pch=16, cex=1.2, ylim=c(0,max(Mat)*1.05), xlim=c(min(age.seq), max(age.seq)))
+    lines(1:length(Mat), Mat)
     mtext(text="Proportion Mature", side=2, line=2.5, font=1)
     
     # Natural Mortality at Age
     Ma <- (scenario$life$M*(0.5*scenario$life$vblinf)/TL)^scenario$life$lorenzc
-    plot(1:length(Ma), Ma, ylab="", xlab="", las=1,pch=16, cex=1.2, ylim=c(0,0.4), xlim=c(0.5,18.5))
+    plot(1:length(Ma), Ma, ylab="", xlab="", las=1, pch=16, cex=1.2, ylim=c(0,Ma[2]*1.05), xlim=c(min(age.seq), max(age.seq)))
+    lines(1:length(Ma), Ma)
     mtext(text="Natural Mortality", side=2, line=2.5, font=1)
     mtext(text="Age", side=1, line=3, at=-4, font=2)
   }

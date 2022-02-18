@@ -1,0 +1,232 @@
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+#
+#			Code to run all scenarios and models
+#		
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+# not required to run
+# work flow of the publication:
+	# tune R0
+	# set up 10 management scenarios
+	# run models with various levels of exploitation status
+	# extract relative values
+
+library(truncnorm)
+# wd <- "" # set your working directory here, where all the code is
+setwd(wd)
+source("functions/scallop_model_fun.R") # scallop model function
+
+
+###-----------------------------------------------------
+#		Tune R0
+###-----------------------------------------------------
+source("functions/tune_calibrate.R") # for tuning and calibrating the models 
+# minimize estimated average gallons of scallops per person (hpue) and catchability estimate from Granneman et al. (2021)
+	scenario$sim$run <- FALSE
+	(R0.hunt <- r0_hunter(hpue=0.81, upper.bnd=3))
+	scenario$life$Ro <- R0.hunt$newR0 #input new R0 to get the desired probability of hitting the harvest rate
+	# unfished scenario
+	unf <- scenario
+	unf$catch_eq$bag <- rep(0.001,12) # very low bag limit - "no fishing"
+	unf <- scallop_model_fun(unf)
+	eggs0 <- sum(unf$results$eggs_mon[1:12])
+	
+
+###-----------------------------------------------------
+#		Management scenarios
+###-----------------------------------------------------
+# 10 scenarios
+# base - 3 month harvest season July-September, 2 gallon bag limit
+# increased bag - 3 month season July-September, 3 gallon bag limit
+# decreased bag - 3 month season July-September, 1 gallon bag limit
+# increased season (later) - four month season July-October, 2 gallon bag limit
+# decreased season (earlier) - four month season June-September, 2 gallon bag limit
+# later season - 3 month season August-October, 2 gallon bag limit
+# earlier season - 3 month season June-August, 2 gallon bag limit
+# rolling bag limit, 3 month season July-September, 0.5-> 1 -> 2 gallon bag limit
+# rolling bag limit and later season, 3 month season August-October, 0.5-> 1 -> 2 gallon bag limit
+# rolling bag limit and earlier season, 3 month season June-August, 0.5-> 1 -> 2 gallon bag limit
+
+	mgmt_scen <- rep(list(list(bag=NULL,E_open=NULL,E_cap=NULL)),12)
+	mgmt_scen[[1]]$bag <- rep(0.001,12) #Decrease Bag, Basically unfished scenario
+	mgmt_scen[[2]]$bag <- rep(3,12) # bag limit = 3
+	mgmt_scen[[3]]$bag <- rep(1,12) # bag limit = 1
+	mgmt_scen[[4]]$E_open <- c(0,0,0,0,0,0,1,1,1,1,0,0) # season length - increase in total effort, extend one month forward
+	mgmt_scen[[5]]$E_open <- c(0,0,0,0,0,0,1,1,1,1,0,0) # season length - same effort, extend one month forward
+	mgmt_scen[[5]]$E_cap <- TRUE
+	mgmt_scen[[6]]$E_open <- c(0,0,0,0,0,1,1,1,1,0,0,0)# season length - increase in total effort, extend one month back
+	mgmt_scen[[7]]$E_open <- c(0,0,0,0,0,1,1,1,1,0,0,0)# season length - same effort, extend one month back
+	mgmt_scen[[7]]$E_cap <- TRUE
+	mgmt_scen[[8]]$E_open <- c(0,0,0,0,0,0,0,1,1,1,0,0)# push season back one month
+	mgmt_scen[[9]]$E_open <- c(0,0,0,0,0,1,1,1,0,0,0,0)# push season forward one month
+	mgmt_scen[[10]]$bag <- c(1,1,1,1,1,1,0.5,1,1.5,2,2,2)# rolling bag limit - increasing
+	mgmt_scen[[11]]$bag <- c(1,1,1,1,1,1,1,0.5,1,1.5,2,2)# rolling bag and season start - back one month
+	mgmt_scen[[11]]$E_open <- c(0,0,0,0,0,0,0,1,1,1,0,0)
+	mgmt_scen[[12]]$bag <- c(1,1,1,1,1,1,0.5,1,1.5,2,2,2)# rolling bag and season start - forward one month
+	mgmt_scen[[12]]$E_open <- c(0,0,0,0,0,0,1,1,1,0,0,0)
+
+
+###-----------------------------------------------------
+#		Sensitiviy analyses
+###-----------------------------------------------------
+# not in publication, sensitivity analyses of life history parameters
+	sens.par <- c("catch_eq$q","life$M","life$vbk","life$CR","life$amat")
+	sens.runner <- function(perchange=0.25, par){
+		s1 <- scenario
+		s2 <- scenario
+		s1$sim$run <- TRUE
+		s2$sim$run <- TRUE
+		par.spl <- strsplit(par,"\\$")[[1]]
+		s1[[par.spl[1]]][[par.spl[2]]] <- scenario[[par.spl[1]]][[par.spl[2]]]*(1-perchange)
+		s2[[par.spl[1]]][[par.spl[2]]] <- scenario[[par.spl[1]]][[par.spl[2]]]*(1+perchange)
+		v <- list(senq1 = scallop_model_fun(s1),
+		          senq2 = scallop_model_fun(s2))
+	}
+	sens_str <- lapply(sens.par, function(x) sens.runner(par=x))
+	names(sens_str) <- sapply(strsplit(sens.par,"\\$"),function(x) x[2])
+
+
+###-----------------------------------------------------
+#		Various exploitation levels
+###-----------------------------------------------------
+# run mgmt scenarios with different starting q (i.e. different exploitation levels)
+	mgmt_q_runner <- function(perchange,run=FALSE,E=NULL,bag=NULL,E_open=NULL,E_cap=NULL){
+		s1 <- scenario
+		s1$catch_eq$q <- scenario$catch_eq$q * (1+perchange)
+		if(run){
+			s1$sim$run <- TRUE
+			s1$catch_run$q <- scenario$catch_run$q * (1+perchange)
+			if(!is.null(E)) s1$catch_run$E_years <- E
+			if(!is.null(bag)) s1$catch_run$bag <- bag
+			if(!is.null(E_open)) s1$catch_run$E_open <- E_open
+			if(!is.null(E_cap)) s1$catch_run$E_cap <- E_cap
+		}else{
+			if(!is.null(E)) s1$catch_eq$E_years <- E
+			if(!is.null(bag)) s1$catch_eq$bag <- bag
+			if(!is.null(E_open)) s1$catch_eq$E_open <- E_open
+			if(!is.null(E_cap)) s1$catch_eq$E_cap <- E_cap
+		}
+		scallop_model_fun(s1)
+	}
+	E1 <- seq(1,2,length.out=25) # effort - increasing between years (doubling over 25 years)
+    E2 <- seq(1,3,length.out=25) # effort - increasing between years (tripling over 25 years)
+	E_seq <- list(NULL,NULL,NULL,E1,E1,E1,E2,E2,E2)
+	spr_seq <- c(0.5,0.35,0.2) #desired SPRs
+	q_hunter <- function(spr,E){
+		spr.fn <- function(perchange, spr, E){
+			s1 <- scenario
+			s1$catch_eq$q <- scenario$catch_eq$q * (1+perchange)
+			if(!is.null(E)) s1$catch_eq$E_years <- E
+			eggs.obs <- try(scallop_model_fun(s1)$results$eggs_mon)
+			eggs.obs <- tapply(eggs.obs, cut(seq_along(eggs.obs),25),sum)
+			#ending eggs divide unfished beginning eggs
+			spr.obs <- eggs.obs[length(eggs.obs)]/eggs0
+			# spr.obs <- try(scallop_model_fun(s1)$scenario$per.rec$spr)
+			if(class(spr.obs)=='try-error'){
+				dev <- 1000
+			}else{
+				dev <- (spr.obs-spr)^2
+				# dev <- -dnorm(spr.obs-spr,0,1,log=T)
+			}
+			return(dev)
+		}
+		theta <- 0
+		fit <- optim(par=theta, fn=spr.fn, spr=spr, E=E, 
+		             lower=-1, upper=8, method='Brent')
+
+		return(fit$par)
+	}
+	perchange_seq <- sapply(spr_seq, function(ii) q_hunter(spr=ii, E=NULL))
+	# perchange_seq[1] <- 0 #set to baseline
+	perchange_seq <- rep(perchange_seq, 3)
+	# perchange_seq <- c(0,0.964,2.86,-0.324,0.31,1.58,-0.493,-0.018,0.93)
+	#base scenarios
+	mgmt_base_q <- lapply(1:length(E_seq), function(x){mgmt_scen[[1]]$E <- E_seq[[x]]; mgmt_scen[[1]]$perchange <- perchange_seq[[x]]; mgmt_scen[[1]]$bag <- NULL; return(mgmt_scen[[1]])})
+  	scen_str_base <- lapply(mgmt_base_q, function(x) mgmt_q_runner(perchange=x$perchange, E=x$E, run=TRUE))
+
+  	sapply(scen_str_base, function(x) x$scenario$per.rec$spr)
+  	sapply(scen_str_base, function(x){v <- x$results$eggs; v <- v[v!=0]; return(v[length(v)]/eggs0)})
+
+    #mgmt scenarios
+    mgmt_scen_q <- lapply(1:length(E_seq),function(x)lapply(mgmt_scen,function(y) {y$E <- E_seq[[x]]; y$perchange <- perchange_seq[[x]]; return(y)}))
+
+    scen_str_all <- lapply(mgmt_scen_q, function(y) lapply(y,function(x)mgmt_q_runner(perchange=x$perchange,run=TRUE,E=x$E,bag=x$bag,E_open=x$E_open,E_cap=x$E_cap)))
+    
+##################################
+# save all scenarios to one .RData
+
+    save(scen_str_base,
+    	scen_str_all,
+    	sens_str,
+     file = "./Scenario_Figures/semel_scenario_sensitivity_storage.RData")
+
+    # rm(list=ls())
+    # gc()
+    # load("./Scenario_Figures/semel_scenario_sensitivity_storage.RData")
+
+
+###-----------------------------------------------------
+#		For creation of bar plots
+###-----------------------------------------------------
+# extracting base lines values (from scen_str_base)
+# absolute and relative values of spawning output (depl) and harvest per unit of effort (hpue)
+	# eggs0 above	
+		eggs_list <- sapply(1:9, function(x) sum(scen_str_base[[x]]$results$eggs_mon[289:300]))
+		depl_base <- eggs_list/eggs0
+	hcpue_list <- lapply(1:9, function(x) matrix(scen_str_base[[x]]$results$hcpue, nrow = 12, ncol = 25))
+		for(i in 1:9) hcpue_list[[i]][hcpue_list[[i]] == 0] <- NA
+		hcpue_base <- sapply(1:9, function(x) colMeans(hcpue_list[[x]], na.rm = TRUE))
+		hcpue_base <- sapply(1:9, function(x) mean(hcpue_base[21:25,x]))
+	hpue_list <- lapply(1:9, function(x) matrix(scen_str_base[[x]]$results$hpue, nrow = 12, ncol = 25))
+		for(i in 1:9) hpue_list[[i]][hpue_list[[i]] == 0] <- NA
+		hpue_base <- sapply(1:9, function(x) colMeans(hpue_list[[x]], na.rm = TRUE))
+		hpue_base <- sapply(1:9, function(x) mean(hpue_base[21:25,x]))
+
+## extracting values from all treatments and scenarios
+	depl_rel <- matrix(NA, nrow = 9, ncol = 12)
+	hcpue_rel <- matrix(NA, nrow = 9, ncol = 12)
+	hpue_rel <- matrix(NA, nrow = 9, ncol = 12)
+	depl_abs <- matrix(NA, nrow = 9, ncol = 12)
+	hcpue_abs <- matrix(NA, nrow = 9, ncol = 12)
+	hpue_abs <- matrix(NA, nrow = 9, ncol = 12)
+
+	for(j in 1:9){
+		# depletion
+			# eggs0 <- sapply(1:12, function(x) scen_str_all[[j]][[x]]$results$eggs[12])
+			eggs_list <- sapply(1:12, function(x) sum(scen_str_all[[j]][[x]]$results$eggs_mon[289:300]))
+			depl <- eggs_list/eggs0
+		# hcpue (open months, last 5 years) - is there a better way to do this?
+	        hcpue_list <- lapply(1:12, function(x) matrix(scen_str_all[[j]][[x]]$results$hcpue, nrow = 12, ncol = 25))
+	        for(i in 1:12) hcpue_list[[i]][hcpue_list[[i]] == 0] <- NA
+	        hcpue <- sapply(1:12, function(x) colMeans(hcpue_list[[x]], na.rm = TRUE))
+	        hcpue <- sapply(1:12, function(x) mean(hcpue[21:25,x]))    
+	    # hpue (open montths, last 5 years)
+	       hpue_list <- lapply(1:12, function(x) matrix(scen_str_all[[j]][[x]]$results$hpue, nrow = 12, ncol = 25))
+	        for(i in 1:12) hpue_list[[i]][hpue_list[[i]] == 0] <- NA
+	        hpue <- sapply(1:12, function(x) colMeans(hpue_list[[x]], na.rm = TRUE))
+	        hpue <- sapply(1:12, function(x) mean(hpue[21:25, x])) 
+	        hpue[1] <- 0 # "unfished" scenario
+	    # combine all results to get relative errors
+	        depl_rel[j,] <- sapply(1:12, function(x) (depl[x]-depl_base[j])/depl_base[j])
+	        hcpue_rel[j,] <- sapply(1:12, function(x) (hcpue[x]-hcpue_base[j])/hcpue_base[j])
+	        hpue_rel[j,] <- sapply(1:12, function(x) (hpue[x]-hpue_base[j])/hpue_base[j])
+	    # combine all results to get abs values
+	        depl_abs[j,] <- sapply(1:12, function(x) depl[x])
+	        hcpue_abs[j,] <- sapply(1:12, function(x) hcpue[x])
+	        hpue_abs[j,] <- sapply(1:12, function(x) hpue[x])
+  	}
+  	depl_abs <- cbind(depl_base, depl_abs)
+  	hcpue_abs <- cbind(hcpue_base, hcpue_abs)
+  	hpue_abs <- cbind(hpue_base, hpue_abs)
+    colnames(depl_abs) <- NULL; colnames(hcpue_abs) <- NULL; colnames(hpue_abs) <- NULL
+
+  	bar_res <- list(depl_rel = depl_rel,
+                    hcpue_rel = hcpue_rel,
+                    hpue_rel = hpue_rel,
+                    depl_abs = depl_abs,
+                    hcpue_abs = hcpue_abs,
+                    hpue_abs = hpue_abs)
+    # save(bar_res, file = "./Results_RData/semel_res_plots.RData")
+    # save(scen_str_base, scen_str_all, sens_str,
+    # file = "./Results_RData/semel_scenario_sensitivity_storage.RData")
