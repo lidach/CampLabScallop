@@ -12,7 +12,6 @@ library(sp)
 library(sf)
 library(lwgeom)
 # wd <- "" # set your working directory here, where all the code is
-wd <- "C:\\Users\\li.chong\\OneDrive - University of Florida\\School stuff\\Projects\\Scallops\\CampLabScallop"
 setwd(wd)
 path <- paste0(wd,"/data/")
 
