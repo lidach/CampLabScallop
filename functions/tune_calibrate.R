@@ -52,3 +52,54 @@ r0_hunter <- function(hpue,lower.bnd=-0.5,upper.bnd=1){
 			       hpue.mu = eval[[2]],
 			       pr_hr = eval[[3]]))
 	}
+
+
+###-----------------------------------------------------
+#		Tune catchability (q)
+###-----------------------------------------------------
+# run model with new change in  q (percent change)
+mgmt_q_runner <- function(perchange, run = FALSE, E = NULL, bag = NULL, E_open = NULL, E_cap = NULL){
+	s1 <- scenario
+	s1$catch_eq$q <- scenario$catch_eq$q * (1+perchange)
+	if(run){
+		s1$sim$run <- TRUE
+		s1$catch_run$q <- scenario$catch_run$q * (1+perchange)
+		if(!is.null(E)) s1$catch_run$E_years <- E
+		if(!is.null(bag)) s1$catch_run$bag <- bag
+		if(!is.null(E_open)) s1$catch_run$E_open <- E_open
+		if(!is.null(E_cap)) s1$catch_run$E_cap <- E_cap
+	}else{
+		if(!is.null(E)) s1$catch_eq$E_years <- E
+		if(!is.null(bag)) s1$catch_eq$bag <- bag
+		if(!is.null(E_open)) s1$catch_eq$E_open <- E_open
+		if(!is.null(E_cap)) s1$catch_eq$E_cap <- E_cap
+	}
+	scallop_model_fun(s1)
+}
+
+
+# find q (catchability) given SPR and effort
+q_hunter <- function(spr,E){
+	spr.fn <- function(perchange, spr, E){
+		s1 <- scenario
+		s1$catch_eq$q <- scenario$catch_eq$q * (1+perchange)
+		if(!is.null(E)) s1$catch_eq$E_years <- E
+		eggs.obs <- try(scallop_model_fun(s1)$results$eggs_mon)
+		eggs.obs <- tapply(eggs.obs, cut(seq_along(eggs.obs),25),sum)
+		#ending eggs divide unfished beginning eggs
+		spr.obs <- eggs.obs[length(eggs.obs)]/eggs0
+		# spr.obs <- try(scallop_model_fun(s1)$scenario$per.rec$spr)
+		if(class(spr.obs)=='try-error'){
+			dev <- 1000
+		}else{
+			dev <- (spr.obs-spr)^2
+			# dev <- -dnorm(spr.obs-spr,0,1,log=T)
+		}
+		return(dev)
+	}
+	theta <- 0
+	fit <- optim(par=theta, fn=spr.fn, spr=spr, E=E, 
+	             lower=-1, upper=8, method='Brent')
+
+	return(fit$par)
+}
