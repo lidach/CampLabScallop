@@ -59,8 +59,8 @@ source("functions/tune_calibrate.R") # for tuning and calibrating the models
 	mgmt_scen[[8]]$bag <- c(1,1,1,1,1,1,0.5,1,1.5,2,2,2) # rolling bag limit - increasing
 	mgmt_scen[[9]]$bag <- c(1,1,1,1,1,1,1,0.5,1,1.5,2,2) # rolling bag and season start - back one month
 	mgmt_scen[[9]]$E_open <- c(0,0,0,0,0,0,0,1,1,1,0,0)
-	mgmt_scen[[10]]$bag <- c(1,1,1,1,1,1,0.5,1,1.5,2,2,2)# rolling bag and season start - forward one month
-	mgmt_scen[[10]]$E_open <- c(0,0,0,0,0,0,1,1,1,0,0,0)
+	mgmt_scen[[10]]$bag <- c(1,1,1,1,1,0.5,1,1.5,2,2,2,2)# rolling bag and season start - forward one month
+	mgmt_scen[[10]]$E_open <- c(0,0,0,0,0,1,1,1,0,0,0,0)
 
 
 ###-----------------------------------------------------
