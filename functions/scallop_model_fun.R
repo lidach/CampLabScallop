@@ -109,7 +109,8 @@ scallop_model_fun <- function(scenario){
       life.vec$Lfished[i] <- life.vec$Lfished[i-1]*exp(-1*(-log(life.vec$Surv[i-1]) + (life.vec$pseudo.eff[i-1]*scenario$catch_eq$q*life.vec$Vul[i-1]))) # Survivorship fished, Continuous
     }
     life.vec$Mat <- 1/(1+exp(-mgr*(life.vec$Age-amat)))                                                   # Maturity at month, based on logistic
-    life.vec$Fec <- .1*life.vec$Wt                                                                        # Fecundity, scalar of weight at month
+    # life.vec$Fec <- .1*life.vec$Wt                                                                        # Fecundity, scalar of weight at month
+    life.vec$Fec <- life.vec$Wt                                                                        # Fecundity, scalar of weight at month
     life.vec$prob_spawn <- rep(0,amax)                                                                    # Starting probability of spawn vector
     # normalization necessary to only scallop to spawn once, second year - iteroparity
     life.vec$prob_spawn[1:12] <- prob_spawn[1:12]/sum(prob_spawn[1:12])                                   # normalizing first year of prob spawn
@@ -240,7 +241,7 @@ scallop_model_fun <- function(scenario){
           # using a half-normal truncated at zero to get the density of 
           hcpue[i] <- sum(catch_base)/et[i]                                   # expected catch rate of harvestable fish
           hcpue[i] <- ifelse(is.nan(hcpue[i]),0,hcpue[i])                     # div0 trap for effort = 0
-          dens.catch <- dtruncnorm(scenario$catch_eq$catch.rate[[timer[i]]], a=0, mean=hcpue[i], sd=hcpue[i]*0.4)
+          dens.catch <- dtruncnorm(scenario$catch_eq$catch.rate[[timer[i]]], a=0, mean=hcpue[i], sd=hcpue[i]*0.455)
           dens.catch <- dens.catch/sum(dens.catch)                            # need to sum to 1 to prevent loss from density range
           hpue[i] <- sum(dens.catch*scenario$catch_eq$ret[[timer[i]]])        # Expected catch rate of scallops under the bag limit
           # NEWTON-RAPHSON Iterations to adjust q such that the catch rate equals what would be expected under the bag
@@ -287,7 +288,7 @@ scallop_model_fun <- function(scenario){
           # using a half-normal truncated at zero to get the density of 
           hcpue[i] <- sum(catch_base)/et[i]                                   # expected catch rate of harvestable fish
           hcpue[i] <- ifelse(is.nan(hcpue[i]),0,hcpue[i])                     # div0 trap for effort = 0
-          dens.catch <- dtruncnorm(scenario$catch_run$catch.rate[[timer[i]]], a=0, mean=hcpue[i], sd=hcpue[i]*0.4)
+          dens.catch <- dtruncnorm(scenario$catch_run$catch.rate[[timer[i]]], a=0, mean=hcpue[i], sd=hcpue[i]*0.455)
           dens.catch <- dens.catch/sum(dens.catch)                            # need to sum to 1 to prevent loss from density range
           hpue[i] <- sum(dens.catch*scenario$catch_run$ret[[timer[i]]])           # Expected catch rate of scallops under the bag limit
           # NEWTON-RAPHSON Iterations to adjust q such that the catch rate equals what would be expected under the bag
