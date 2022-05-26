@@ -56,10 +56,10 @@ source("functions/tune_calibrate.R") # for tuning and calibrating the models
 	mgmt_scen[[5]]$E_open <- c(0,0,0,0,0,1,1,1,1,0,0,0) # season length, extend one month back
 	mgmt_scen[[6]]$E_open <- c(0,0,0,0,0,0,0,1,1,1,0,0) # push season back one month
 	mgmt_scen[[7]]$E_open <- c(0,0,0,0,0,1,1,1,0,0,0,0) # push season forward one month
-	mgmt_scen[[8]]$bag <- c(1,1,1,1,1,1,0.5,1,1.5,2,2,2) # rolling bag limit - increasing
-	mgmt_scen[[9]]$bag <- c(1,1,1,1,1,1,1,0.5,1,1.5,2,2) # rolling bag and season start - back one month
+	mgmt_scen[[8]]$bag <- c(1,1,1,1,1,1,1,2,2,2,2,2) # rolling bag limit - increasing
+	mgmt_scen[[9]]$bag <- c(1,1,1,1,1,1,1,1,2,2,2,2) # rolling bag and season start - back one month
 	mgmt_scen[[9]]$E_open <- c(0,0,0,0,0,0,0,1,1,1,0,0)
-	mgmt_scen[[10]]$bag <- c(1,1,1,1,1,0.5,1,1.5,2,2,2,2)# rolling bag and season start - forward one month
+	mgmt_scen[[10]]$bag <- c(1,1,1,1,1,1,2,2,2,2,2,2)# rolling bag and season start - forward one month
 	mgmt_scen[[10]]$E_open <- c(0,0,0,0,0,1,1,1,0,0,0,0)
 
 
@@ -160,7 +160,7 @@ scen_names2 <- c("base", "incr. bag", "decr. bag", "incr. szn. (later)", "incr. 
 require(RColorBrewer)
 col <- colorRampPalette(brewer.pal(9,"Blues"))(length(scen_names2))
 m <- matrix(c(1:6), nrow = 2, ncol = 3, byrow = TRUE)
-exploit_names <- c("high", "medium", "low")
+exploit_names <- c("low", "moderate", "high")
 Et_names <- c("base effort", NA,NA,"double effort")
 
 ## Spawning output
