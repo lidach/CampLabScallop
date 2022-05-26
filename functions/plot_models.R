@@ -11,32 +11,56 @@
 ###-----------------------------------------------------
 # 4x4 Life history plot
 # length at age, weight at age, maturity at age, and natural mortality at age
-  LH_plot <- function(age.seq, scenario){
-    par(mfrow=c(2,2), mar=c(2,4,1,1), oma=c(3,3,1,1))
-    # Length at Age
-    TL <- scenario$life$vblinf*(1-exp(-scenario$life$vbk*(age.seq-scenario$life$vbt0)))
-    plot(1:length(TL), TL, ylab="", xaxt="n", las=1, pch=16, cex=1.2, ylim=c(0,max(TL)*1.05), xlim=c(min(age.seq), max(age.seq)))
-    lines(1:length(TL), TL)
-    mtext(text="Total Length (mm)", side=2, line=2.5, font=1)
-    
-    # Weight at Age
-    Wt <- (scenario$life$alw*(TL)^scenario$life$alwb)
-    plot(1:length(Wt), Wt, ylab="", xaxt="n", las=1, pch=16, cex=1.2, ylim=c(0,max(Wt)*1.05), xlim=c(min(age.seq), max(age.seq)))
-    lines(1:length(Wt), Wt)
-    mtext(text="Weight (g)", side=2, line=2.5, font=1)
-    
-    # Maturity at Age
-    Mat <- 1/(1+exp(-scenario$life$mgr*(age.seq-scenario$life$amat)))
-    plot(1:length(Mat), Mat, ylab="", xlab="", las=1, pch=16, cex=1.2, ylim=c(0,max(Mat)*1.05), xlim=c(min(age.seq), max(age.seq)))
-    lines(1:length(Mat), Mat)
-    mtext(text="Proportion Mature", side=2, line=2.5, font=1)
-    
-    # Natural Mortality at Age
-    Ma <- (scenario$life$M*(0.5*scenario$life$vblinf)/TL)^scenario$life$lorenzc
-    plot(1:length(Ma), Ma, ylab="", xlab="", las=1, pch=16, cex=1.2, ylim=c(0,Ma[2]*1.05), xlim=c(min(age.seq), max(age.seq)))
-    lines(1:length(Ma), Ma)
-    mtext(text="Natural Mortality", side=2, line=2.5, font=1)
-    mtext(text="Age", side=1, line=3, at=-4, font=2)
+  LH_plot <- function(scenario){
+    age.seq.sm <- seq(0.1,18, by=0.1)
+    age.seq <- seq(0,18)
+    age.fn <- function(age.seq, scenario){
+        x <- data.frame(TL = scenario$life$vblinf*(1-exp(-scenario$life$vbk*(age.seq-scenario$life$vbt0))),
+                        Mat = 1/(1+exp(-scenario$life$mgr*(age.seq-scenario$life$amat))))
+        x$Wt <- (scenario$life$alw*(x$TL)^scenario$life$alwb)
+        x$Ma<-(scenario$life$M*(0.5*scenario$life$vblinf)/x$TL)^scenario$life$lorenzc
+        x$Vul <- 1/(1+exp(-scenario$life$vgr*(x$TL-scenario$life$vlh)))
+        return(x)
+    }
+    lh <- age.fn(age.seq, scenario)
+    lh.sm <- age.fn(age.seq.sm, scenario)
+    fig.lab <- function(i, xscale=0.05, yscale=0.95, cex=1.4, adj=c(0.5,0.5),...){
+        text(x = par('usr')[1] + abs(diff(par('usr')[1:2]))*xscale,
+             y = par('usr')[3] + abs(diff(par('usr')[3:4]))*yscale,
+             ifelse(is.numeric(i),LETTERS[i],i), xpd=NA, cex=cex, adj=adj,...)
+    }
+
+    par(mfrow=c(3,2), mar=c(1,3,0,0.5), oma=c(2,0.5,1,0),
+        tck=-0.02, mgp=c(2,0.5,0))
+      # Length at Age
+      plot(age.seq, lh$TL, ylab="", xaxt="n", las=1, 
+           pch=16, cex=1.2, xlim=c(0.5,18.1))
+      lines(age.seq.sm, lh.sm$TL)
+      axis(1, at=pretty(age.seq), labels=FALSE)
+      mtext(text="Shell Height (mm)", side=2, line=2, font=1)
+      fig.lab(1, xscale=0.05, yscale=0.91,font=2)
+      # Weight at Age
+      plot(age.seq, lh$Wt, ylab="", xaxt ="n", las=1, pch=16, cex=1.2, xlim=c(0.5,18.1))
+      lines(age.seq.sm, lh.sm$Wt)
+      axis(1, at=pretty(age.seq), labels=FALSE)
+      mtext(text="Weight (g)", side=2, line=2, font=1)
+      fig.lab(2, xscale=0.05, yscale=0.91,font=2)
+      # Selectivity
+      plot(age.seq, lh$Vul, ylab="", xaxt="n", las=1,pch=16, cex=1.2, ylim=c(0,1),xlim=c(0.5,18.1))
+      lines(age.seq.sm, lh.sm$Vul)
+      mtext(text="Selectivity", side=2, line=2, font=1)
+      fig.lab(3, xscale=0.05, yscale=0.91,font=2)
+      # Maturity 
+      plot(age.seq, lh$Mat, ylab="", xlab="", las=1, pch=16, cex=1.2, ylim=c(0,1), xlim=c(0.5,18.1))
+      lines(age.seq.sm, lh.sm$Mat)
+      mtext(text="Proportion Mature", side=2, line=2, font=1)
+      fig.lab(4, xscale=0.05, yscale=0.91,font=2)
+      # Natural mortality at Age
+      plot(age.seq, lh$Ma, ylab="", xlab="", las=1,pch=16, cex=1.2, ylim=c(0,1),xlim=c(0.5,18.1))
+      lines(age.seq.sm, lh.sm$Ma)
+      mtext(text="Natural Mortality", side=2, line=2, font=1)
+      fig.lab(5, xscale=0.095, yscale=0.91,font=2)
+      mtext(text="Age (months)", side=1, line=1.75, at=20, font=2)
   }
 
 

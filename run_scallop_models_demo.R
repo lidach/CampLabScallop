@@ -116,7 +116,7 @@ dev.off()
 base <- scallop_model_fun(scenario)
 
 # plot 4x4 life history (length at age, weight at age, maturity at age, natural mortality at age)
-LH_plot(age.seq = 0:18, scenario = scenario) 
+LH_plot(scenario = scenario) 
 
 # plot 2x3 time series (vulnerable biomass, depletion (in numbers), effort, yield, recruits, and eggs)
 time_series_plot(base)
