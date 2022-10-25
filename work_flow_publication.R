@@ -1,7 +1,7 @@
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 #
-#			Code to run all scenarios and models
+#		Code to run all scenarios and models
 #		
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -13,6 +13,7 @@
 	# extract absolute and relative values
 
 library(truncnorm)
+require(RColorBrewer)
 # wd <- "" # set your working directory here, where all the code is
 setwd(wd)
 source("functions/scallop_model_fun.R") # scallop model function
@@ -157,7 +158,6 @@ source("functions/tune_calibrate.R") # for tuning and calibrating the models
 ###-----------------------------------------------------
 scen_names2 <- c("base", "incr. bag", "decr. bag", "incr. szn. (later)", "incr. szn. (earlier)",
                 "later szn.", "earlier szn.", "rolling bag", "rolling bag later szn.", "rolling bag earlier szn.")
-require(RColorBrewer)
 col <- colorRampPalette(brewer.pal(9,"Blues"))(length(scen_names2))
 m <- matrix(c(1:6), nrow = 2, ncol = 3, byrow = TRUE)
 exploit_names <- c("low", "moderate", "high")
@@ -171,8 +171,6 @@ with(bar_res,{
     for(i in 1:6){
       if(i == 1) par(mar=c(1.1,3.2,2.5,0))
       if(i %in% c(2,3)) par(mar = c(1.1,2.2,2.5,1))
-      # if(i == 4) par(mar = c(0.1,3.2,1,0))
-      # if(i %in% c(5,6)) par(mar = c(0.1,1,1,1))
       if(i %in% 4) par(mar = c(11,3.2,1,0))
       if(i %in% c(5,6)) par(mar = c(11,2.2,1,1))
 
@@ -185,10 +183,12 @@ with(bar_res,{
       }
       mtext(letters[i], line = -1, adj = 0.05, cex = 0.9, las = 1, col = "grey30")
       axis(2, at = seq(0,1,0.5), las = 1)
-      if(i %in% c(1,4)) title(ylab = Et_names[i], line = 2.3)
+      if(i %in% c(1,4)) title(ylab = Et_names[i], line = 2.4)
 
       if(i %in% c(1,2,3)) title(main = exploit_names[i], font.main = 1, line = -.01, cex = 0.8)
-      if(i == 2) title(main = "Spawning output (eggs/eggs0)", line = 1.55)
+      if(i == 2) title(main = "Exploitation level", font.main = 1, line = 1.55)
+      mtext("Spawning output (eggs/eggs0)", font.main = 1, adj = 0.63, cex = 0.8, side = 2, line = 0.8, outer =  TRUE)
+      
     }
  })
 # dev.off()
@@ -199,8 +199,6 @@ with(bar_res,{
     for(i in 1:6){
       if(i == 1) par(mar=c(1.1,3.2,2.5,0))
       if(i %in% c(2,3)) par(mar = c(1.1,2.2,2.5,1))
-      # if(i == 4) par(mar = c(0.1,3.2,1,0))
-      # if(i %in% c(5,6)) par(mar = c(0.1,1,1,1))
       if(i %in% 4) par(mar = c(11,3.2,1,0))
       if(i %in% c(5,6)) par(mar = c(11,2.2,1,1))
 
@@ -213,10 +211,11 @@ with(bar_res,{
       }
       mtext(letters[i], line = -1, adj = 0.05, cex = 0.9, las = 1, col = "grey30")
       axis(2, at = seq(0,1,0.5), las = 1)
-      if(i %in% c(1,4)) title(ylab = Et_names[i], line = 2.3)
+      if(i %in% c(1,4)) title(ylab = Et_names[i], line = 2.4)
 
       if(i %in% c(1,2,3)) title(main = exploit_names[i], font.main = 1, line = -.01, cex = 0.8)
-      if(i == 2) title(main = "Harvest per unit of effort (gal/person)", line = 1.55)
+      if(i == 2) title(main = "Exploitation level", font.main = 1, line = 1.55)
+      mtext("Harvest per unit of effort (gal/person)", font.main = 1, adj = 0.63, cex = 0.8, side = 2, line = 0.8, outer =  TRUE)
      }
 })
 # dev.off()
