@@ -12,8 +12,8 @@
 # 4x4 Life history plot
 # length at age, weight at age, maturity at age, and natural mortality at age
   LH_plot <- function(scenario){
-    age.seq.sm <- seq(0.1,18, by=0.1)
-    age.seq <- seq(0,18)
+    age.seq.sm <- seq(1.1,18, by=0.1)
+    age.seq <- seq(1,18)
     age.fn <- function(age.seq, scenario){
         x <- data.frame(TL = scenario$life$vblinf*(1-exp(-scenario$life$vbk*(age.seq-scenario$life$vbt0))),
                         Mat = 1/(1+exp(-scenario$life$mgr*(age.seq-scenario$life$amat))))
@@ -34,29 +34,29 @@
         tck=-0.02, mgp=c(2,0.5,0))
       # Length at Age
       plot(age.seq, lh$TL, ylab="", xaxt="n", las=1, 
-           pch=16, cex=1.2, xlim=c(0.5,18.1))
+           pch=16, cex=1.2, xlim=c(1,18))
       lines(age.seq.sm, lh.sm$TL)
       axis(1, at=pretty(age.seq), labels=FALSE)
       mtext(text="Shell Height (mm)", side=2, line=2, font=1)
       fig.lab(1, xscale=0.05, yscale=0.91,font=2)
       # Weight at Age
-      plot(age.seq, lh$Wt, ylab="", xaxt ="n", las=1, pch=16, cex=1.2, xlim=c(0.5,18.1))
+      plot(age.seq, lh$Wt, ylab="", xaxt ="n", las=1, pch=16, cex=1.2, xlim=c(1,18))
       lines(age.seq.sm, lh.sm$Wt)
       axis(1, at=pretty(age.seq), labels=FALSE)
       mtext(text="Weight (g)", side=2, line=2, font=1)
       fig.lab(2, xscale=0.05, yscale=0.91,font=2)
       # Selectivity
-      plot(age.seq, lh$Vul, ylab="", xaxt="n", las=1,pch=16, cex=1.2, ylim=c(0,1),xlim=c(0.5,18.1))
+      plot(age.seq, lh$Vul, ylab="", xaxt="n", las=1,pch=16, cex=1.2, ylim=c(0,1),xlim=c(1,18))
       lines(age.seq.sm, lh.sm$Vul)
       mtext(text="Selectivity", side=2, line=2, font=1)
       fig.lab(3, xscale=0.05, yscale=0.91,font=2)
       # Maturity 
-      plot(age.seq, lh$Mat, ylab="", xlab="", las=1, pch=16, cex=1.2, ylim=c(0,1), xlim=c(0.5,18.1))
+      plot(age.seq, lh$Mat, ylab="", xlab="", las=1, pch=16, cex=1.2, ylim=c(0,1), xlim=c(1,18))
       lines(age.seq.sm, lh.sm$Mat)
       mtext(text="Proportion Mature", side=2, line=2, font=1)
       fig.lab(4, xscale=0.05, yscale=0.91,font=2)
       # Natural mortality at Age
-      plot(age.seq, lh$Ma, ylab="", xlab="", las=1,pch=16, cex=1.2, ylim=c(0,1),xlim=c(0.5,18.1))
+      plot(age.seq, lh$Ma, ylab="", xlab="", las=1,pch=16, cex=1.2, ylim=c(0,1),xlim=c(1,18))
       lines(age.seq.sm, lh.sm$Ma)
       mtext(text="Natural Mortality", side=2, line=2, font=1)
       fig.lab(5, xscale=0.095, yscale=0.91,font=2)
