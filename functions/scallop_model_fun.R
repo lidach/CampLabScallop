@@ -115,7 +115,8 @@ scallop_model_fun <- function(scenario){
     # normalization necessary to only scallop to spawn once, second year - iteroparity
     life.vec$prob_spawn[1:12] <- prob_spawn[1:12]/sum(prob_spawn[1:12])                                   # normalizing first year of prob spawn
     if(!semelparous){
-      life.vec$prob_spawn[13:18] <- prob_spawn[1:6]/sum(prob_spawn[1:6])
+#      life.vec$prob_spawn[13:18] <- prob_spawn[1:6]/sum(prob_spawn[1:6])
+      life.vec$prob_spawn[13:18] <- prob_spawn[1:6]/sum(prob_spawn[1:12])
     }
     # normalizing second year of prob spawn
     return(life.vec)
