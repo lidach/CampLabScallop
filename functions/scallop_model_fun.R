@@ -166,8 +166,8 @@ scallop_model_fun <- function(scenario){
   # per recruit section
   scenario$per.rec <- with(scenario$life.vec,{
     per.rec <- list()
-    per.rec$epro_spawn <- sum(Lo*life.vec$indv_avail*Fec*Mat*prob_spawn)       # eggs-per-recruit unfished conditions... includes prob_spawn
-    per.rec$eprf_spawn <- sum(Lfished*life.vec$indv_avail*Fec*Mat*prob_spawn)  # eggs-per-recruit fished conditions... includes prob_spawn
+    per.rec$epro_spawn <- sum(Lo*life.vec$avail_spawn*Fec*Mat*prob_spawn)       # eggs-per-recruit unfished conditions... includes prob_spawn
+    per.rec$eprf_spawn <- sum(Lfished*life.vec$avail_spawn*Fec*Mat*prob_spawn)  # eggs-per-recruit fished conditions... includes prob_spawn
     per.rec$epro <- sum(Lo*Fec*Mat)                        # eggs-per-recruit unfished conditions
     per.rec$eprf <- sum(Lfished*Fec*Mat)                   # eggs-per-recruit fished conditions
     per.rec$bpro <- sum(Wt,Lo)                             # biomass-per-recruit unfished conditions
@@ -228,7 +228,7 @@ scallop_model_fun <- function(scenario){
       #Now with indv_available
       for (t in 12:1){
         eggs[i-1] <- eggs[i-1] +
-          sum( nage[i-t,] * life.vec$indv_avail *         #abundance vector in month i-t of age (1-18))
+          sum( nage[i-t,] * life.vec$avail_spawn *         #abundance vector in month i-t of age (1-18))
                scenario$life.vec$Mat *                    #maturity vector
                scenario$life.vec$prob_spawn[abs(t-13)] *  #Spawning seasonality for month
                scenario$life.vec$Fec)                     #fecundity vector
@@ -347,8 +347,8 @@ scallop_model_fun <- function(scenario){
   # Summary (no need to be in for loop)
   N <- rowSums(nage)                                                        # total numbers in each month, sum of numbers across ages
   VB <- nage%*%(scenario$life.vec$Wt*scenario$life.vec$Vul)                 # vulernable biomass, sum of numbers at age * weight at age * vul at age
-  eggs_mon <- rowSums(t(t(nage)*life.vec$indv_avail*scenario$life.vec$Fec*scenario$life.vec$Mat*scenario$life.vec$prob_spawn)) # eggs produced each month, calculated for visualization and results
-  eggs_mon_age <- t(t(nage)*life.vec$indv_avail*scenario$life.vec$Fec*scenario$life.vec$Mat*scenario$life.vec$prob_spawn)      # eggs per month per age
+  eggs_mon <- rowSums(t(t(nage)*life.vec$avail_spawn*scenario$life.vec$Fec*scenario$life.vec$Mat*scenario$life.vec$prob_spawn)) # eggs produced each month, calculated for visualization and results
+  eggs_mon_age <- t(t(nage)*life.vec$avail_spawn*scenario$life.vec$Fec*scenario$life.vec$Mat*scenario$life.vec$prob_spawn)      # eggs per month per age
   yield_n <- rowSums((F_harv/Z)*nage*(1-exp(-Z)))                                                          # yield in numbers
   yield_b <-  rowSums(((F_harv/Z)*nage*(1-exp(-Z))) %*% diag(scenario$life.vec$Wt))                       # yield in biomass  (CAA * Waa)
   cpue_n <- yield_n/et                                                      # cpue in numbers, yield/effort
