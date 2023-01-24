@@ -28,29 +28,29 @@ scenario <- list(
               semelparous = TRUE),
   # for equilibrium
   catch_eq = list(q_flag = "constant",                    # Catchability Option______constant or VB
-                # Effort in each month; merges season open/close
-                E_max  = sum(c(11415,6929,4255))*3.8,     # maximum number vessels, need to multiply by 3.8 to get persons
-                E_cap = FALSE,                            # this is a switch to cap effort @ emax or to allow it to scale following the observed effort decline from Granneman paper
-                E_con = FALSE,                            # this is a switch for constant effort
-                E_open = c(0,0,0,0,0,0,1,1,1,0,0,0),      # this is a vector of months that tells the model where to apply the effort. The effort does not need to be sequential as the eff_spread function will allocate the effort in each month
-                q = 0.0000319/3.8,                        # Catchability, Granneman paper - (0.0000319) value is per vessel so divide by 3.8 to get persons (off by one-order of magnitude for scaling)
-                qmax = .0005,                             # Max Catchability (for q varying with VB)
-                bag_unit = "gallon",                      # Bag limit Units_____gallon or numbers
-                bag = rep(2,12),                          # Bag limit________rep(2,12) for constant
-                E_years = seq(1,1,length.out=25)          # Effort over years_________rep(1,10) for constant
+                  # Effort in each month; merges season open/close
+                  E_max  = sum(c(11415,6929,4255))*3.8,     # maximum number vessels, need to multiply by 3.8 to get persons
+                  E_cap = FALSE,                            # this is a switch to cap effort @ emax or to allow it to scale following the observed effort decline from Granneman paper
+                  E_con = FALSE,                            # this is a switch for constant effort
+                  E_open = c(0,0,0,0,0,0,1,1,1,0,0,0),      # this is a vector of months that tells the model where to apply the effort. The effort does not need to be sequential as the eff_spread function will allocate the effort in each month
+                  q = 0.0000319/3.8,                        # Catchability, Granneman paper - (0.0000319) value is per vessel so divide by 3.8 to get persons (off by one-order of magnitude for scaling)
+                  qmax = .0005,                             # Max Catchability (for q varying with VB)
+                  bag_unit = "gallon",                      # Bag limit Units_____gallon or numbers
+                  bag = rep(2,12),                          # Bag limit________rep(2,12) for constant
+                  E_years = seq(1,1,length.out=25)          # Effort over years_________rep(1,10) for constant
   ), 
   # for actual model runs
   catch_run = list(q_flag = "constant",                   # Catchability Option______constant or VB
-                # Effort in each month; merges season open/close
-                E_max  = sum(c(11415,6929,4255))*3.8,     # maximum number vessels, need to multiply by 3.8 to get persons
-                E_cap = FALSE,                            # this is a switch to cap effort @ emax or to allow it to scale following the observed effort decline from Granneman paper
-                E_con = FALSE,                            # this is a switch for constant effort
-                E_open = c(0,0,0,0,0,0,1,1,1,0,0,0),      # this is a vector of months that tells the model where to apply the effort. The effort does not need to be sequential as the eff_spread function will allocate the effort in each month
-                q = 0.0000319/3.8,                        # Catchability, Granneman paper - (0.0000319) value is per vessel so divide by 3.8 to get persons (off by one-order of magnitude for scaling)
-                qmax = .0005,                             # Max Catchability (for q varying with VB)
-                bag_unit = "gallon",                      # Bag limit Units_____gallon or numbers
-                bag = rep(2,12),                          # Bag limit________rep(2,12) for constant
-                E_years = seq(1,1,length.out=25)          # Effort over years_________rep(1,10) for constant
+                   # Effort in each month; merges season open/close
+                   E_max  = sum(c(11415,6929,4255))*3.8,     # maximum number vessels, need to multiply by 3.8 to get persons
+                   E_cap = FALSE,                            # this is a switch to cap effort @ emax or to allow it to scale following the observed effort decline from Granneman paper
+                   E_con = FALSE,                            # this is a switch for constant effort
+                   E_open = c(0,0,0,0,0,0,1,1,1,0,0,0),      # this is a vector of months that tells the model where to apply the effort. The effort does not need to be sequential as the eff_spread function will allocate the effort in each month
+                   q = 0.0000319/3.8,                        # Catchability, Granneman paper - (0.0000319) value is per vessel so divide by 3.8 to get persons (off by one-order of magnitude for scaling)
+                   qmax = .0005,                             # Max Catchability (for q varying with VB)
+                   bag_unit = "gallon",                      # Bag limit Units_____gallon or numbers
+                   bag = rep(2,12),                          # Bag limit________rep(2,12) for constant
+                   E_years = seq(1,1,length.out=25)          # Effort over years_________rep(1,10) for constant
   ), 
   sim = list(month_eq = 300,
              month_run = 300,
@@ -111,17 +111,26 @@ scallop_model_fun <- function(scenario){
     life.vec$Mat <- 1/(1+exp(-mgr*(life.vec$Age-amat)))                                                   # Maturity at month, based on logistic
     # life.vec$Fec <- .1*life.vec$Wt                                                                        # Fecundity, scalar of weight at month
     life.vec$Fec <- life.vec$Wt                                                                        # Fecundity, scalar of weight at month
-    life.vec$prob_spawn <- rep(0,amax)                                                                    # Starting probability of spawn vector
+    life.vec$prob_spawn <- rep(0,12)                                                                    # Starting probability of spawn vector
     # normalization necessary to only scallop to spawn once, second year - iteroparity
     life.vec$prob_spawn[1:12] <- prob_spawn[1:12]/sum(prob_spawn[1:12])                                   # normalizing first year of prob spawn
+    
+    life.vec$avail_spawn<-cumprod(c(1,(1-life.vec$prob_spawn[1]*scenario$life.vec$Mat[1]),  (1-life.vec$prob_spawn[2]*scenario$life.vec$Mat[2]),  (1-life.vec$prob_spawn[3]*scenario$life.vec$Mat[3]),
+                                      (1-life.vec$prob_spawn[4]*scenario$life.vec$Mat[4]),  (1-life.vec$prob_spawn[5]*scenario$life.vec$Mat[5]),  (1-life.vec$prob_spawn[6]*scenario$life.vec$Mat[6]),
+                                      (1-life.vec$prob_spawn[7]*scenario$life.vec$Mat[7]),  (1-life.vec$prob_spawn[8]*scenario$life.vec$Mat[8]),  (1-life.vec$prob_spawn[9]*scenario$life.vec$Mat[9]),
+                                      (1-life.vec$prob_spawn[10]*scenario$life.vec$Mat[10]),(1-life.vec$prob_spawn[11]*scenario$life.vec$Mat[11]),(1-life.vec$prob_spawn[12]*scenario$life.vec$Mat[12]),
+                                      (1-life.vec$prob_spawn[1]*scenario$life.vec$Mat[13]), (1-life.vec$prob_spawn[2]*scenario$life.vec$Mat[14]), (1-life.vec$prob_spawn[3]*scenario$life.vec$Mat[15]),
+                                      (1-life.vec$prob_spawn[4]*scenario$life.vec$Mat[16]), (1-life.vec$prob_spawn[5]*scenario$life.vec$Mat[17])))
+    
     if(!semelparous){
+      #Commented out bc prob spawn is 12 month vector accounting for seasonality of spawning
 #      life.vec$prob_spawn[13:18] <- prob_spawn[1:6]/sum(prob_spawn[1:6])
-      life.vec$prob_spawn[13:18] <- prob_spawn[1:6]/sum(prob_spawn[1:12])
+#      life.vec$prob_spawn[13:18] <- prob_spawn[1:6]/sum(prob_spawn[1:12])
     }
     # normalizing second year of prob spawn
     return(life.vec)
   })
-
+  
   # bag limit 
   # Number of scallops in a gallon as a function of shell height (Geiger et al., 2006; Granneman et al., 2021)
   # switch for bag limit units
@@ -157,8 +166,8 @@ scallop_model_fun <- function(scenario){
   # per recruit section
   scenario$per.rec <- with(scenario$life.vec,{
     per.rec <- list()
-    per.rec$epro_spawn <- sum(Lo*Fec*Mat*prob_spawn)       # eggs-per-recruit unfished conditions... includes prob_spawn
-    per.rec$eprf_spawn <- sum(Lfished*Fec*Mat*prob_spawn)  # eggs-per-recruit fished conditions... includes prob_spawn
+    per.rec$epro_spawn <- sum(Lo*life.vec$indv_avail*Fec*Mat*prob_spawn)       # eggs-per-recruit unfished conditions... includes prob_spawn
+    per.rec$eprf_spawn <- sum(Lfished*life.vec$indv_avail*Fec*Mat*prob_spawn)  # eggs-per-recruit fished conditions... includes prob_spawn
     per.rec$epro <- sum(Lo*Fec*Mat)                        # eggs-per-recruit unfished conditions
     per.rec$eprf <- sum(Lfished*Fec*Mat)                   # eggs-per-recruit fished conditions
     per.rec$bpro <- sum(Wt,Lo)                             # biomass-per-recruit unfished conditions
@@ -185,7 +194,7 @@ scallop_model_fun <- function(scenario){
     recruit$yield.eq <- (1-exp(-1*(scenario$life.vec$pseudo.eff*scenario$catch_eq$q))) * vbprf * recruit$r.eq      # Harvest rate * vulbio per recruit fished * rec at equilibrium
     return(recruit)
   })
-
+  
   # declare locally for easy calling
   amax <- scenario$life$amax
   if(scenario$sim$run){
@@ -193,7 +202,7 @@ scallop_model_fun <- function(scenario){
   }else{
     months <- scenario$sim$month_eq
   }
-
+  
   # storage
   eggs <- N <- B <- VB <- hr <- yield_n <- yield_b <- cpue_n <- cpue_b <- qt <- et <- hcpue <- hpue <- pr_hr <- pr_F <- vector(length = months)
   F_harv <- Z <- hr_harv <- nage <- matrix(0, months, amax)
@@ -213,7 +222,17 @@ scallop_model_fun <- function(scenario){
     # check if alive
     # recruitment
     if((i %% 12) == 1 & i != 1){
-      eggs[i-1] <- sum(scenario$life.vec$Fec * scenario$life.vec$Mat * t(nage[(i-12):(i-1),])*scenario$life.vec$prob_spawn) # Accumulating the eggs over the course of the year.
+      #old way
+#      eggs[i-1] <- sum(scenario$life.vec$Fec * scenario$life.vec$Mat * t(nage[(i-12):(i-1),])*scenario$life.vec$prob_spawn) # Accumulating the eggs over the course of the year.
+
+      #Now with indv_available
+      for (t in 12:1){
+        eggs[i-1] <- eggs[i-1] +
+          sum( nage[i-t,] * life.vec$indv_avail *         #abundance vector in month i-t of age (1-18))
+               scenario$life.vec$Mat *                    #maturity vector
+               scenario$life.vec$prob_spawn[abs(t-13)] *  #Spawning seasonality for month
+               scenario$life.vec$Fec)                     #fecundity vector
+      }
       
       nage[i,1] <- scenario$recruit$bha_spawn*eggs[i-1]/(1+scenario$recruit$bhb_spawn*eggs[i-1])                            # the recruitment without process error
       #nage[i,1] <- scenario$recruit$bha_spawn*eggs[i-1]/(1+scenario$recruit$bhb_spawn*eggs[i-1])*exp(proc_err[i-1])        # including process error
@@ -249,7 +268,7 @@ scallop_model_fun <- function(scenario){
           if(hpue[i] < hcpue[i]){                                             # If the catch rate under the bag is lower than the unregulated catch rate, then do newt-raph
             # New adjusted q for bag limit using Newton-Raphson
             qt[i] <- exp( uniroot(f = function(lq) {                          # Finding a new q that will make catch rate equal to the expected catch rate under the bag
-               hpue[i] - sum(((exp(lq)*et[i]*scenario$life.vec$Vul)/((exp(lq)*et[i]*scenario$life.vec$Vul)+scenario$life.vec$M)) * scal_gal * (1-exp(-((exp(lq)*et[i]*scenario$life.vec$Vul)+scenario$life.vec$M)))) /  et[i] # Baranov/Effort
+              hpue[i] - sum(((exp(lq)*et[i]*scenario$life.vec$Vul)/((exp(lq)*et[i]*scenario$life.vec$Vul)+scenario$life.vec$M)) * scal_gal * (1-exp(-((exp(lq)*et[i]*scenario$life.vec$Vul)+scenario$life.vec$M)))) /  et[i] # Baranov/Effort
             }, lower=-20, upper=0, extendInt="yes")$root )
           }
         }else{
@@ -264,7 +283,7 @@ scallop_model_fun <- function(scenario){
           if(hpue[i] < hcpue[i]){                                              # If the catch rate under the bag is lower than the unregulated catch rate, then do newt-raph
             # New adjusted q for bag limit using Newton-Raphson
             qt[i]<-exp( uniroot(f = function(lq) {                             # Finding a new q that will make catch rate equal to the expected catch rate under the bag
-               hpue[i] - sum(((exp(lq)*et[i]*scenario$life.vec$Vul)/((exp(lq)*et[i]*scenario$life.vec$Vul)+scenario$life.vec$M)) * nage[i,] * (1-exp(-((exp(lq)*et[i]*scenario$life.vec$Vul)+scenario$life.vec$M)))) /  et[i]    # Baranov/Effort
+              hpue[i] - sum(((exp(lq)*et[i]*scenario$life.vec$Vul)/((exp(lq)*et[i]*scenario$life.vec$Vul)+scenario$life.vec$M)) * nage[i,] * (1-exp(-((exp(lq)*et[i]*scenario$life.vec$Vul)+scenario$life.vec$M)))) /  et[i]    # Baranov/Effort
             }, lower=-20, upper=0, extendInt="yes")$root )
           }
         }
@@ -296,7 +315,7 @@ scallop_model_fun <- function(scenario){
           if(hpue[i] < hcpue[i]){                                             # If the catch rate under the bag is lower than the unregulated catch rate, then do newt-raph
             # New adjusted q for bag limit using Newton-Raphson
             qt[i] <- exp( uniroot(f = function(lq) {                          # Finding a new q that will make catch rate equal to the expected catch rate under the bag
-               hpue[i] - sum(((exp(lq)*et[i]*scenario$life.vec$Vul)/((exp(lq)*et[i]*scenario$life.vec$Vul)+scenario$life.vec$M)) * scal_gal * (1-exp(-((exp(lq)*et[i]*scenario$life.vec$Vul)+scenario$life.vec$M)))) /  et[i] # Baranov/Effort
+              hpue[i] - sum(((exp(lq)*et[i]*scenario$life.vec$Vul)/((exp(lq)*et[i]*scenario$life.vec$Vul)+scenario$life.vec$M)) * scal_gal * (1-exp(-((exp(lq)*et[i]*scenario$life.vec$Vul)+scenario$life.vec$M)))) /  et[i] # Baranov/Effort
             }, lower=-20, upper=0, extendInt="yes")$root )
           }
         }else{
@@ -311,13 +330,13 @@ scallop_model_fun <- function(scenario){
           if(hpue[i] < hcpue[i]){                                              # If the catch rate under the bag is lower than the unregulated catch rate, then do newt-raph
             # New adjusted q for bag limit using Newton-Raphson
             qt[i]<-exp( uniroot(f = function(lq) {                             # Finding a new q that will make catch rate equal to the expected catch rate under the bag
-               hpue[i] - sum(((exp(lq)*et[i]*scenario$life.vec$Vul)/((exp(lq)*et[i]*scenario$life.vec$Vul)+scenario$life.vec$M)) * nage[i,] * (1-exp(-((exp(lq)*et[i]*scenario$life.vec$Vul)+scenario$life.vec$M)))) /  et[i]    # Baranov/Effort
+              hpue[i] - sum(((exp(lq)*et[i]*scenario$life.vec$Vul)/((exp(lq)*et[i]*scenario$life.vec$Vul)+scenario$life.vec$M)) * nage[i,] * (1-exp(-((exp(lq)*et[i]*scenario$life.vec$Vul)+scenario$life.vec$M)))) /  et[i]    # Baranov/Effort
             }, lower=-20, upper=0, extendInt="yes")$root )
           }
         }
       }
     } # end for eq vs run conditions switch
-
+    
     # Mortality
     F_harv[i,] <- qt[i]*et[i]*scenario$life.vec$Vul                  # Fishing mortality
     Z[i,] <- F_harv[i,]+scenario$life.vec$M                          # Total mortality
@@ -328,8 +347,8 @@ scallop_model_fun <- function(scenario){
   # Summary (no need to be in for loop)
   N <- rowSums(nage)                                                        # total numbers in each month, sum of numbers across ages
   VB <- nage%*%(scenario$life.vec$Wt*scenario$life.vec$Vul)                 # vulernable biomass, sum of numbers at age * weight at age * vul at age
-  eggs_mon <- rowSums(t(t(nage)*scenario$life.vec$Fec*scenario$life.vec$Mat*scenario$life.vec$prob_spawn)) # eggs produced each month, calculated for visualization and results
-  eggs_mon_age <- t(t(nage)*scenario$life.vec$Fec*scenario$life.vec$Mat*scenario$life.vec$prob_spawn)      # eggs per month per age
+  eggs_mon <- rowSums(t(t(nage)*life.vec$indv_avail*scenario$life.vec$Fec*scenario$life.vec$Mat*scenario$life.vec$prob_spawn)) # eggs produced each month, calculated for visualization and results
+  eggs_mon_age <- t(t(nage)*life.vec$indv_avail*scenario$life.vec$Fec*scenario$life.vec$Mat*scenario$life.vec$prob_spawn)      # eggs per month per age
   yield_n <- rowSums((F_harv/Z)*nage*(1-exp(-Z)))                                                          # yield in numbers
   yield_b <-  rowSums(((F_harv/Z)*nage*(1-exp(-Z))) %*% diag(scenario$life.vec$Wt))                       # yield in biomass  (CAA * Waa)
   cpue_n <- yield_n/et                                                      # cpue in numbers, yield/effort
@@ -340,32 +359,32 @@ scallop_model_fun <- function(scenario){
   # return
   ret.l <- list(scenario = scenario,
                 results_full = data.frame(time = 1:months,
-                                   N = N,
-                                   eggs = eggs,
-                                   eggs_mon = eggs_mon,
-                                   eggs_mon_age = eggs_mon_age,
-                                   B = B,
-                                   VB = VB,
-                                   recruits = recruits,
-                                   yield_n = yield_n,
-                                   yield_b = yield_b,
-                                   cpue_n = cpue_n,
-                                   cpue_b = cpue_b,
-                                   et = et,
-                                   qt = qt,
-                                   hcpue = hcpue,
-                                   hpue = hpue,
-                                   hr = hr),
+                                          N = N,
+                                          eggs = eggs,
+                                          eggs_mon = eggs_mon,
+                                          eggs_mon_age = eggs_mon_age,
+                                          B = B,
+                                          VB = VB,
+                                          recruits = recruits,
+                                          yield_n = yield_n,
+                                          yield_b = yield_b,
+                                          cpue_n = cpue_n,
+                                          cpue_b = cpue_b,
+                                          et = et,
+                                          qt = qt,
+                                          hcpue = hcpue,
+                                          hpue = hpue,
+                                          hr = hr),
                 matrix_full = list(nage = nage,
-                              F_harv = F_harv))
+                                   F_harv = F_harv))
   if(scenario$sim$run){
     ret.l$results <- ret.l$results_full[(scenario$sim$month_eq+1):months,]
     ret.l$matrix <- list(nage = nage[(scenario$sim$month_eq+1):months,],
-                              F_harv = F_harv[(scenario$sim$month_eq+1):months,])
+                         F_harv = F_harv[(scenario$sim$month_eq+1):months,])
   }else{
     ret.l$results <- ret.l$results_full
     ret.l$matrix <- ret.l$matrix_full
   }
-
+  
   return(ret.l)
 } # end of function
