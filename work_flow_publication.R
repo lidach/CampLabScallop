@@ -18,6 +18,9 @@ require(RColorBrewer)
 setwd(wd)
 source("functions/scallop_model_fun.R") # scallop model function
 
+# save results for appendix
+appendix_save <- TRUE
+
 
 ###-----------------------------------------------------
 #		Tune R0
@@ -73,9 +76,7 @@ source("functions/tune_calibrate.R") # for tuning and calibrating the models
 	spr_seq <- c(0.5,0.35,0.2) #desired SPRs
 	
 	perchange_seq <- sapply(spr_seq, function(ii) q_hunter(spr=ii, E=NULL))
-	# perchange_seq[1] <- 0 #set to baseline
 	perchange_seq <- rep(perchange_seq, 3)
-	# perchange_seq <- c(0,0.964,2.86,-0.324,0.31,1.58,-0.493,-0.018,0.93)
 	#base scenarios
 	mgmt_base_q <- lapply(1:length(E_seq), function(x){mgmt_scen[[1]]$E <- E_seq[[x]]; mgmt_scen[[1]]$perchange <- perchange_seq[[x]]; mgmt_scen[[1]]$bag <- NULL; return(mgmt_scen[[1]])})
   	scen_str_base <- lapply(mgmt_base_q, function(x) mgmt_q_runner(perchange=x$perchange, E=x$E, run=TRUE))
@@ -88,17 +89,6 @@ source("functions/tune_calibrate.R") # for tuning and calibrating the models
 
     scen_str_all <- lapply(mgmt_scen_q, function(y) lapply(y,function(x)mgmt_q_runner(perchange=x$perchange,run=TRUE,E=x$E,bag=x$bag,E_open=x$E_open,E_cap=x$E_cap)))
     
-##################################
-# save all scenarios to one .RData
-
-    # save(scen_str_base,
-    # 	scen_str_all,
-    # 	sens_str,
-    #  file = "./Scenario_Figures/semel_scenario_sensitivity_storage.RData")
-
-    # rm(list=ls())
-    # gc()
-    # load("./Scenario_Figures/semel_scenario_sensitivity_storage.RData")
 
 
 ###-----------------------------------------------------
@@ -107,7 +97,7 @@ source("functions/tune_calibrate.R") # for tuning and calibrating the models
 # extracting base lines values (from scen_str_base)
 # absolute and relative values of spawning output (depl) and harvest per unit of effort (hpue)
 	# eggs0 above	
-		eggs_list <- sapply(1:6, function(x) sum(scen_str_base[[x]]$results$eggs_mon[289:300]))
+	eggs_list <- sapply(1:6, function(x) sum(scen_str_base[[x]]$results$eggs_mon[289:300]))
 		depl_base <- eggs_list/eggs0
 	hpue_list <- lapply(1:6, function(x) matrix(scen_str_base[[x]]$results$hpue, nrow = 12, ncol = 25))
 		for(i in 1:6) hpue_list[[i]][hpue_list[[i]] == 0] <- NA
@@ -148,9 +138,10 @@ source("functions/tune_calibrate.R") # for tuning and calibrating the models
                     hpue_rel = hpue_rel,
                     depl_abs = depl_abs,
                     hpue_abs = hpue_abs)
-    # save(bar_res, file = "./Results_RData/semel_res_plots.RData")
-    # save(scen_str_base, scen_str_all, sens_str,
-    # file = "./Results_RData/semel_scenario_sensitivity_storage.RData")
+
+# save main results for appendix?
+if(appendix_save) save(bar_res, file = file.path(wd, "main_res.RData"))
+
 
 
 ###-----------------------------------------------------
@@ -163,9 +154,16 @@ m <- matrix(c(1:6), nrow = 2, ncol = 3, byrow = TRUE)
 exploit_names <- c("low", "moderate", "high")
 Et_names <- c("base effort", NA,NA,"double effort")
 
+# export plots to local directory
+export <- TRUE
+
+
 ## Spawning output
 with(bar_res,{
     colnames(depl_abs) <- NULL; colnames(hcpue_abs) <- NULL; colnames(hpue_abs) <- NULL
+
+    # export plots?
+    if(export)  tiff(filename = file.path(wd ,"/spawning_output_res.tiff"), height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
 
     layout(mat = m, heights = c(0.25,0.4))
     for(i in 1:6){
@@ -189,12 +187,15 @@ with(bar_res,{
       if(i == 2) title(main = "Exploitation level", font.main = 1, line = 1.55)
       mtext("Spawning output (eggs/eggs0)", font.main = 1, adj = 0.63, cex = 0.8, side = 2, line = 0.8, outer =  TRUE)
       
+	if(export) dev.off()
+
     }
  })
-# dev.off()
 
 ## Harvest per unit of effort
 with(bar_res,{
+    if(export)  tiff(filename = file.path(wd ,"/HPUE_res.tiff"), height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
+    
     layout(mat = m, heights = c(0.25,0.4))
     for(i in 1:6){
       if(i == 1) par(mar=c(1.1,3.2,2.5,0))
@@ -217,5 +218,7 @@ with(bar_res,{
       if(i == 2) title(main = "Exploitation level", font.main = 1, line = 1.55)
       mtext("Harvest per unit of effort (gal/person)", font.main = 1, adj = 0.63, cex = 0.8, side = 2, line = 0.8, outer =  TRUE)
      }
+
+	if(export) dev.off()
+
 })
-# dev.off()

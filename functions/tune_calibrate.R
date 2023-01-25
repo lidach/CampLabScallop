@@ -84,8 +84,9 @@ q_hunter <- function(spr,E){
 		s1 <- scenario
 		s1$catch_eq$q <- scenario$catch_eq$q * (1+perchange)
 		if(!is.null(E)) s1$catch_eq$E_years <- E
-		eggs.obs <- try(scallop_model_fun(s1)$results$eggs_mon)
-		eggs.obs <- tapply(eggs.obs, cut(seq_along(eggs.obs),25),sum)
+		eggs.obs <- try(scallop_model_fun(s1)$results$eggs)
+		# eggs.obs <- tapply(eggs.obs, cut(seq_along(eggs.obs),25),sum)
+		eggs.obs <- eggs.obs[eggs.obs != 0]
 		#ending eggs divide unfished beginning eggs
 		spr.obs <- eggs.obs[length(eggs.obs)]/eggs0
 		# spr.obs <- try(scallop_model_fun(s1)$scenario$per.rec$spr)
