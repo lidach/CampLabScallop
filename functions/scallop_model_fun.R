@@ -95,7 +95,7 @@ scallop_model_fun <- function(scenario){
   
   prob_spawn <- rep(0,12)                                                                    # Starting probability of spawn vector
   # normalization necessary to only scallop to spawn once, second year - iteroparity
-  prob_spawn[1:12] <- prob_spawn[1:12]/sum(prob_spawn[1:12])                                   # normalizing first year of prob spawn
+  prob_spawn[1:12] <- scenario$life$prob_spawn[1:12]/sum(scenario$life$prob_spawn[1:12])      # normalizing first year of prob spawn
 
   # Life history vectors
   scenario$life.vec <- with(scenario$life,{
