@@ -92,6 +92,10 @@ scallop_model_fun <- function(scenario){
   scenario$catch_run$effort <- eff_spread(scenario$catch_run$E_max, scenario$catch_run$E_open, scenario$catch_run$E_cap, scenario$catch_run$E_con)
   
   TLref <- scenario$life$vblinf*0.5 # Reference Length for Lorenzen M, (calculate from life values)
+  
+  prob_spawn <- rep(0,12)                                                                    # Starting probability of spawn vector
+  # normalization necessary to only scallop to spawn once, second year - iteroparity
+  prob_spawn[1:12] <- prob_spawn[1:12]/sum(prob_spawn[1:12])                                   # normalizing first year of prob spawn
 
   # Life history vectors
   scenario$life.vec <- with(scenario$life,{
@@ -113,17 +117,12 @@ scallop_model_fun <- function(scenario){
     # life.vec$Fec <- .1*life.vec$Wt                                                                        # Fecundity, scalar of weight at month
     life.vec$Fec <- life.vec$Wt 
 
-    life.vec$prob_spawn <- rep(0,amax)                                                                    # Starting probability of spawn vector
-    # normalization necessary to only scallop to spawn once, second year - iteroparity
-    life.vec$prob_spawn[1:12] <- prob_spawn[1:12]/sum(prob_spawn[1:12])                                   # normalizing first year of prob spawn
-    life.vec$prob_spawn[13:18] <- life.vec$prob_spawn[1:6]                                   # normalizing first year of prob spawn
-
-    life.vec$avail_spawn<-cumprod(c(1,(1-life.vec$prob_spawn[1]*scenario$life.vec$Mat[1]),  (1-life.vec$prob_spawn[2]*scenario$life.vec$Mat[2]),  (1-life.vec$prob_spawn[3]*scenario$life.vec$Mat[3]),
-                                      (1-life.vec$prob_spawn[4]*scenario$life.vec$Mat[4]),  (1-life.vec$prob_spawn[5]*scenario$life.vec$Mat[5]),  (1-life.vec$prob_spawn[6]*scenario$life.vec$Mat[6]),
-                                      (1-life.vec$prob_spawn[7]*scenario$life.vec$Mat[7]),  (1-life.vec$prob_spawn[8]*scenario$life.vec$Mat[8]),  (1-life.vec$prob_spawn[9]*scenario$life.vec$Mat[9]),
-                                      (1-life.vec$prob_spawn[10]*scenario$life.vec$Mat[10]),(1-life.vec$prob_spawn[11]*scenario$life.vec$Mat[11]),(1-life.vec$prob_spawn[12]*scenario$life.vec$Mat[12]),
-                                      (1-life.vec$prob_spawn[1]*scenario$life.vec$Mat[13]), (1-life.vec$prob_spawn[2]*scenario$life.vec$Mat[14]), (1-life.vec$prob_spawn[3]*scenario$life.vec$Mat[15]),
-                                      (1-life.vec$prob_spawn[4]*scenario$life.vec$Mat[16]), (1-life.vec$prob_spawn[5]*scenario$life.vec$Mat[17])))
+    life.vec$avail_spawn<-cumprod(c(1,(1-prob_spawn[1]*scenario$life.vec$Mat[1]),  (1-prob_spawn[2]*scenario$life.vec$Mat[2]),  (1-prob_spawn[3]*scenario$life.vec$Mat[3]),
+                                      (1-prob_spawn[4]*scenario$life.vec$Mat[4]),  (1-prob_spawn[5]*scenario$life.vec$Mat[5]),  (1-prob_spawn[6]*scenario$life.vec$Mat[6]),
+                                      (1-prob_spawn[7]*scenario$life.vec$Mat[7]),  (1-prob_spawn[8]*scenario$life.vec$Mat[8]),  (1-prob_spawn[9]*scenario$life.vec$Mat[9]),
+                                      (1-prob_spawn[10]*scenario$life.vec$Mat[10]),(1-prob_spawn[11]*scenario$life.vec$Mat[11]),(1-prob_spawn[12]*scenario$life.vec$Mat[12]),
+                                      (1-prob_spawn[1]*scenario$life.vec$Mat[13]), (1-prob_spawn[2]*scenario$life.vec$Mat[14]), (1-prob_spawn[3]*scenario$life.vec$Mat[15]),
+                                      (1-prob_spawn[4]*scenario$life.vec$Mat[16]), (1-prob_spawn[5]*scenario$life.vec$Mat[17])))
     
     if(!semelparous){
       #Commented out bc prob spawn is 12 month vector accounting for seasonality of spawning
@@ -169,8 +168,8 @@ scallop_model_fun <- function(scenario){
   # per recruit section
   scenario$per.rec <- with(scenario$life.vec,{
     per.rec <- list()
-    per.rec$epro_spawn <- sum(Lo*scenario$life.vec$avail_spawn*Fec*Mat*scenario$life.vec$prob_spawn)       # eggs-per-recruit unfished conditions... includes prob_spawn
-    per.rec$eprf_spawn <- sum(Lfished*scenario$life.vec$avail_spawn*Fec*Mat*scenario$life.vec$prob_spawn)  # eggs-per-recruit fished conditions... includes prob_spawn
+    per.rec$epro_spawn <- sum(Lo*scenario$life.vec$avail_spawn*Fec*Mat*c(prob_spawn,prob_spawn[1:6]))       # eggs-per-recruit unfished conditions... includes prob_spawn
+    per.rec$eprf_spawn <- sum(Lfished*scenario$life.vec$avail_spawn*Fec*Mat*c(prob_spawn,prob_spawn[1:6]))  # eggs-per-recruit fished conditions... includes prob_spawn
     per.rec$epro <- sum(Lo*Fec*Mat)                        # eggs-per-recruit unfished conditions
     per.rec$eprf <- sum(Lfished*Fec*Mat)                   # eggs-per-recruit fished conditions
     per.rec$bpro <- sum(Wt,Lo)                             # biomass-per-recruit unfished conditions
@@ -226,15 +225,15 @@ scallop_model_fun <- function(scenario){
     # recruitment
     if((i %% 12) == 1 & i != 1){
       #old way
-#      eggs[i-1] <- sum(scenario$life.vec$Fec * scenario$life.vec$Mat * t(nage[(i-12):(i-1),])*scenario$life.vec$prob_spawn) # Accumulating the eggs over the course of the year.
+#      eggs[i-1] <- sum(scenario$life.vec$Fec * scenario$life.vec$Mat * t(nage[(i-12):(i-1),])*c(prob_spawn,rep(0,6))) # Accumulating the eggs over the course of the year.
 
       #Now with indv_available
       for (t in 12:1){
         eggs[i-1] <- eggs[i-1] +
-          sum( nage[i-t,] * scenario$life.vec$avail_spawn *         #abundance vector in month i-t of age (1-18))
-               scenario$life.vec$Mat *                    #maturity vector
-               scenario$life.vec$prob_spawn[abs(t-13)] *  #Spawning seasonality for month
-               scenario$life.vec$Fec)                     #fecundity vector
+          sum( nage[i-t,] * scenario$life.vec$avail_spawn *   #abundance vector in month i-t of age (1-18))
+               scenario$life.vec$Mat *                        #maturity vector
+               prob_spawn[abs(t-13)] *                        #Spawning seasonality for month
+               scenario$life.vec$Fec)                         #fecundity vector
       }
       
       nage[i,1] <- scenario$recruit$bha_spawn*eggs[i-1]/(1+scenario$recruit$bhb_spawn*eggs[i-1])                            # the recruitment without process error
@@ -350,8 +349,8 @@ scallop_model_fun <- function(scenario){
   # Summary (no need to be in for loop)
   N <- rowSums(nage)                                                        # total numbers in each month, sum of numbers across ages
   VB <- nage%*%(scenario$life.vec$Wt*scenario$life.vec$Vul)                 # vulernable biomass, sum of numbers at age * weight at age * vul at age
-  eggs_mon <- rowSums(t(t(nage)*scenario$life.vec$avail_spawn*scenario$life.vec$Fec*scenario$life.vec$Mat*scenario$life.vec$prob_spawn)) # eggs produced each month, calculated for visualization and results
-  eggs_mon_age <- t(t(nage)*scenario$life.vec$avail_spawn*scenario$life.vec$Fec*scenario$life.vec$Mat*scenario$life.vec$prob_spawn)      # eggs per month per age
+  eggs_mon <- rowSums(t(t(nage)*scenario$life.vec$avail_spawn*scenario$life.vec$Fec*scenario$life.vec$Mat*c(prob_spawn,prob_spawn[1:6]))) # eggs produced each month, calculated for visualization and results
+  eggs_mon_age <- t(t(nage)*scenario$life.vec$avail_spawn*scenario$life.vec$Fec*scenario$life.vec$Mat*c(prob_spawn,prob_spawn[1:6]))      # eggs per month per age
   yield_n <- rowSums((F_harv/Z)*nage*(1-exp(-Z)))                                                          # yield in numbers
   yield_b <-  rowSums(((F_harv/Z)*nage*(1-exp(-Z))) %*% diag(scenario$life.vec$Wt))                       # yield in biomass  (CAA * Waa)
   cpue_n <- yield_n/et                                                      # cpue in numbers, yield/effort
