@@ -19,7 +19,11 @@ setwd(wd)
 source("functions/scallop_model_fun.R") # scallop model function
 
 # save results for appendix
-appendix_save <- TRUE
+appendix_save <- FALSE
+
+# export plots to local directory
+export <- FALSE
+
 
 
 ###-----------------------------------------------------
@@ -147,15 +151,13 @@ if(appendix_save) save(bar_res, file = file.path(wd, "main_res.RData"))
 ###-----------------------------------------------------
 #		Bar plots in the publication
 ###-----------------------------------------------------
-scen_names2 <- c("base", "incr. bag", "decr. bag", "incr. szn. (later)", "incr. szn. (earlier)",
+scen_names <- c("base", "incr. bag", "decr. bag", "incr. szn. (later)", "incr. szn. (earlier)",
                 "later szn.", "earlier szn.", "rolling bag", "rolling bag later szn.", "rolling bag earlier szn.")
-col <- colorRampPalette(brewer.pal(9,"Blues"))(length(scen_names2))
+col <- colorRampPalette(brewer.pal(9,"Blues"))(length(scen_names))
 m <- matrix(c(1:6), nrow = 2, ncol = 3, byrow = TRUE)
 exploit_names <- c("low", "moderate", "high")
 Et_names <- c("base effort", NA,NA,"double effort")
 
-# export plots to local directory
-export <- TRUE
 
 
 ## Spawning output
@@ -166,6 +168,7 @@ with(bar_res,{
     if(export)  tiff(filename = file.path(wd ,"/spawning_output_res.tiff"), height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
 
     layout(mat = m, heights = c(0.25,0.4))
+    par(oma=c(0,2,0,0))
     for(i in 1:6){
       if(i == 1) par(mar=c(1.1,3.2,2.5,0))
       if(i %in% c(2,3)) par(mar = c(1.1,2.2,2.5,1))
@@ -177,7 +180,7 @@ with(bar_res,{
         b <- barplot(depl_abs[i,c(1,3:11)], axes = FALSE, cex.lab = 0.8, ylim = c(0,1), col = col)
         axis(1,at=b[,1],tck=-0.01,labels=FALSE)
         text(b[,1],par('usr')[3]-abs(diff(par('usr')[3:4]))*0.1,
-             scen_names2, srt=60, adj=c(1,0),xpd=NA)
+             scen_names, srt=60, adj=c(1,0),xpd=NA)
       }
       mtext(letters[i], line = -1, adj = 0.05, cex = 0.9, las = 1, col = "grey30")
       axis(2, at = seq(0,1,0.5), las = 1)
@@ -186,10 +189,10 @@ with(bar_res,{
       if(i %in% c(1,2,3)) title(main = exploit_names[i], font.main = 1, line = -.01, cex = 0.8)
       if(i == 2) title(main = "Exploitation level", font.main = 1, line = 1.55)
       mtext("Spawning output (eggs/eggs0)", font.main = 1, adj = 0.63, cex = 0.8, side = 2, line = 0.8, outer =  TRUE)
-      
+    }
+
 	if(export) dev.off()
 
-    }
  })
 
 ## Harvest per unit of effort
@@ -197,6 +200,7 @@ with(bar_res,{
     if(export)  tiff(filename = file.path(wd ,"/HPUE_res.tiff"), height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
     
     layout(mat = m, heights = c(0.25,0.4))
+    par(oma=c(0,2,0,0))
     for(i in 1:6){
       if(i == 1) par(mar=c(1.1,3.2,2.5,0))
       if(i %in% c(2,3)) par(mar = c(1.1,2.2,2.5,1))
@@ -208,7 +212,7 @@ with(bar_res,{
         b <- barplot(hpue_abs[i,c(1,3:11)], axes = FALSE, las = 2, cex.lab = 0.8, ylim = c(0, max(hpue_abs[,c(1,3:11)])+0.1), col = col)
         axis(1,at=b[,1],tck=-0.01,labels=FALSE)
         text(b[,1],par('usr')[3]-abs(diff(par('usr')[3:4]))*0.1,
-             scen_names2, srt=60, adj=c(1,0),xpd=NA)
+             scen_names, srt=60, adj=c(1,0),xpd=NA)
       }
       mtext(letters[i], line = -1, adj = 0.05, cex = 0.9, las = 1, col = "grey30")
       axis(2, at = seq(0,1,0.5), las = 1)
