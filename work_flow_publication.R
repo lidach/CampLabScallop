@@ -18,11 +18,8 @@ require(RColorBrewer)
 setwd(wd)
 source("functions/scallop_model_fun.R") # scallop model function
 
-# save results for appendix
-appendix_save <- FALSE
-
 # export plots to local directory
-export <- FALSE
+export_plots <- FALSE
 
 
 
@@ -32,7 +29,7 @@ export <- FALSE
 source("functions/tune_calibrate.R") # for tuning and calibrating the models 
 # minimize estimated average gallons of scallops per person (hpue) and catchability estimate from Granneman et al. (2021)
 	scenario$sim$run <- FALSE
-	(R0.hunt <- r0_hunter(hpue=0.81, upper.bnd=3))
+	(R0.hunt <- r0_hunter(hpue=0.81, upper.bnd=3, scenario = scenario))
 	scenario$life$Ro <- R0.hunt$newR0 #input new R0 to get the desired probability of hitting the harvest rate
 	# unfished scenario
 	unf <- scenario
@@ -92,7 +89,7 @@ source("functions/tune_calibrate.R") # for tuning and calibrating the models
     mgmt_scen_q <- lapply(1:length(E_seq),function(x)lapply(mgmt_scen,function(y) {y$E <- E_seq[[x]]; y$perchange <- perchange_seq[[x]]; return(y)}))
 
     scen_str_all <- lapply(mgmt_scen_q, function(y) lapply(y,function(x)mgmt_q_runner(perchange=x$perchange,run=TRUE,E=x$E,bag=x$bag,E_open=x$E_open,E_cap=x$E_cap)))
-    
+   
 
 
 ###-----------------------------------------------------
@@ -143,9 +140,6 @@ source("functions/tune_calibrate.R") # for tuning and calibrating the models
                     depl_abs = depl_abs,
                     hpue_abs = hpue_abs)
 
-# save main results for appendix?
-if(appendix_save) save(bar_res, file = file.path(wd, "main_res.RData"))
-
 
 
 ###-----------------------------------------------------
@@ -165,7 +159,7 @@ with(bar_res,{
     colnames(depl_abs) <- NULL; colnames(hcpue_abs) <- NULL; colnames(hpue_abs) <- NULL
 
     # export plots?
-    if(export)  tiff(filename = file.path(wd ,"/spawning_output_res.tiff"), height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
+    if(export_plots)  tiff(filename = file.path(wd ,"/spawning_output_res.tiff"), height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
 
     layout(mat = m, heights = c(0.25,0.4))
     par(oma=c(0,2,0,0))
@@ -191,13 +185,13 @@ with(bar_res,{
       mtext("Spawning output (eggs/eggs0)", font.main = 1, adj = 0.63, cex = 0.8, side = 2, line = 0.8, outer =  TRUE)
     }
 
-	if(export) dev.off()
+	if(export_plots) dev.off()
 
  })
 
 ## Harvest per unit of effort
 with(bar_res,{
-    if(export)  tiff(filename = file.path(wd ,"/HPUE_res.tiff"), height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
+    if(export_plots)  tiff(filename = file.path(wd ,"/HPUE_res.tiff"), height = 14, width = 20, units = 'cm', compression = "lzw", res = 500)
     
     layout(mat = m, heights = c(0.25,0.4))
     par(oma=c(0,2,0,0))
@@ -223,6 +217,6 @@ with(bar_res,{
       mtext("Harvest per unit of effort (gal/person)", font.main = 1, adj = 0.63, cex = 0.8, side = 2, line = 0.8, outer =  TRUE)
      }
 
-	if(export) dev.off()
+	if(export_plots) dev.off()
 
 })

@@ -10,7 +10,7 @@
 #		Tune R0
 ###-----------------------------------------------------
 # tuning unfished recruitment (R0) using harvest per unit of effort (hpue)
-r0_hunter <- function(hpue,lower.bnd=-0.5,upper.bnd=1){
+r0_hunter <- function(hpue,lower.bnd=-0.5,upper.bnd=1,scenario){
 		hpue.fn <- function(perchange, hpue){
 			s1 <- scenario
 			s1$life$Ro <- scenario$life$Ro * (1+perchange)

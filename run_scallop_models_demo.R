@@ -67,7 +67,7 @@ scenario <- list(
 #   FL Bay Scallops regulation map
 ###-----------------------------------------------------
 # map of Scallop regulation (west coast of Florida, Gulf -> Pasco counties)
-if(plot_map == TRUE){
+if(plot_map){
 	  par(mar = c(1,2,0.1,0.1))
   plot(st_geometry(fl_state),
        xlim = c(-85.5, st_bbox(fl_cnt_sub)[3]), 
@@ -124,8 +124,8 @@ time_series_plot(base)
 
 # Example - run with new R0 value
 # hpue = 0.81
-R0.hunt <- r0_hunter(hpue = 0.81, upper.bnd = 3)
-print(c(R0.hunt$newR0, R0.hunt$hpue.mu))
+R0.hunt <- r0_hunter(hpue = 0.81, upper.bnd = 3, scenario = scenario)
+print(c(R0.hunt$newR0, R0.hunt$hpue.mu)) # new R0 and calibrated harvest per unit of effort (0.81, Granneman et al. 2021)
 ex1scen <- scenario
 ex1scen$life$Ro <- R0.hunt$newR0 # input new R0 to get the desired probability of hitting the harvest rate
 ex1 <- scallop_model_fun(ex1scen)
